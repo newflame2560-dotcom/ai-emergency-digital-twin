@@ -5,6 +5,64 @@ const { checkRateLimit } = require('./_lib/rateLimit');
 const AI_ALLOWED_ROLES = ['ic', 'safety'];
 const RATE_LIMIT_PER_ROLE_PER_HOUR = 20;
 const MODEL = 'claude-sonnet-5';
+const MAX_MODEL_RESPONSE_CHARS = 16000;
+const MAX_REPORT_SECTIONS = 3;
+const MAX_SECTION_ITEMS = 8;
+const MAX_HEADING_CHARS = 80;
+const MAX_ITEM_CHARS = 500;
+const MAX_CHAT_ANSWER_CHARS = 4000;
+
+function hasExactKeys(value, keys) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
+
+function isBoundedString(value, maxLength) {
+  return typeof value === 'string' && value.length > 0 && value.length <= maxLength;
+}
+
+function isValidReport(value) {
+  if (!hasExactKeys(value, ['sections']) ||
+      !Array.isArray(value.sections) ||
+      value.sections.length !== MAX_REPORT_SECTIONS) return false;
+
+  return value.sections.every(section =>
+    hasExactKeys(section, ['heading', 'style', 'items']) &&
+    isBoundedString(section.heading, MAX_HEADING_CHARS) &&
+    ['bullets', 'numbered'].includes(section.style) &&
+    Array.isArray(section.items) &&
+    section.items.length > 0 &&
+    section.items.length <= MAX_SECTION_ITEMS &&
+    section.items.every(item => isBoundedString(item, MAX_ITEM_CHARS))
+  );
+}
+
+function isValidChatAnswer(value) {
+  return hasExactKeys(value, ['answer']) &&
+    isBoundedString(value.answer, MAX_CHAT_ANSWER_CHARS);
+}
+
+function validateModelOutput(text) {
+  if (typeof text !== 'string' || text.length === 0 || text.length > MAX_MODEL_RESPONSE_CHARS) {
+    return false;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    return false;
+  }
+  return isValidReport(parsed) || isValidChatAnswer(parsed);
+}
+
+function rejectInvalidModelOutput(res) {
+  res.status(502).json({
+    error: 'AI ส่งข้อมูลในรูปแบบที่ไม่ถูกต้อง',
+    code: 'AI_OUTPUT_INVALID'
+  });
+}
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -90,7 +148,23 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const data = await resp.json();
-  const block = (data.content || []).find(b => b.type === 'text');
-  res.status(200).json({ text: block ? block.text : '', model: MODEL });
+  let data;
+  try {
+    data = await resp.json();
+  } catch (e) {
+    rejectInvalidModelOutput(res);
+    return;
+  }
+  const blocks = data && Array.isArray(data.content) ? data.content : [];
+  const block = blocks.find(b => b && b.type === 'text');
+  const text = block && block.text;
+  if (!validateModelOutput(text)) {
+    console.log(JSON.stringify({
+      event: 'ai_output_validation_failed', role: session.role, endpoint: 'claude-proxy',
+      reason: 'schema_mismatch', ts: new Date().toISOString()
+    }));
+    rejectInvalidModelOutput(res);
+    return;
+  }
+  res.status(200).json({ text, model: MODEL });
 };

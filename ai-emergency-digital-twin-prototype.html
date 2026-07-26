@@ -259,7 +259,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px}
 <aside class="sidebar">
   <div class="brand">
     <div class="logo">🛰️</div>
-    <div class="name">AI Emergency<br>Digital Twin<small>OCC YL · Vector Digital Twin v1.8</small></div>
+    <div class="name">AI Emergency<br>Digital Twin<small>OCC YL · Vector Digital Twin v1.9</small></div>
   </div>
   <button class="nav-btn active" data-page="dashboard"><span class="ic">📊</span> Dashboard</button>
   <button class="nav-btn" data-page="map"><span class="ic">🗺️</span> Building Map</button>
@@ -272,7 +272,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px}
   <div class="foot">
     <div class="role-badge" id="role-badge" style="display:none"></div>
     <button class="btn sm" id="logout-btn" style="display:none;width:100%;margin-bottom:10px" onclick="logout()">ออกจากระบบ</button>
-    ต้นแบบ v1.8 · Backend proxy + Login ตามบทบาท<br>ข้อมูลจำลอง · เฉพาะการฝึกซ้อม
+    ต้นแบบ v1.9 · Validated structured AI output<br>ข้อมูลจำลอง · เฉพาะการฝึกซ้อม
     <div style="display:flex;gap:6px;margin-top:10px">
       <button class="btn sm" id="export-btn" style="flex:1" onclick="exportState()" title="บันทึกไฟล์ข้อมูลปัจจุบันเป็น JSON">⬇ Export</button>
       <button class="btn sm" id="import-btn" style="flex:1" onclick="document.getElementById('import-file').click()" title="นำเข้าไฟล์ JSON ที่เคย Export ไว้">⬆ Import</button>
@@ -3249,11 +3249,54 @@ async function callClaudeAPI(userPrompt, systemPrompt, maxTokens){
   });
   if(!resp.ok){
     let msg = `HTTP ${resp.status}`;
-    try{ const err = await resp.json(); msg = (err && err.error) || msg; }catch(e){}
-    throw new Error(msg);
+    let code = '';
+    try{
+      const err = await resp.json();
+      msg = (err && err.error) || msg;
+      code = (err && err.code) || '';
+    }catch(e){}
+    const error = new Error(msg);
+    error.code = code;
+    throw error;
   }
   const data = await resp.json();
   return data.text || '';
+}
+
+function hasExactAIKeys(value, keys){
+  if(!value || typeof value!=='object' || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length===expected.length && actual.every((key,index)=>key===expected[index]);
+}
+function validAIString(value,maxLength){
+  return typeof value==='string' && value.length>0 && value.length<=maxLength;
+}
+function parseAIChatResponse(text){
+  let value;
+  try{ value=JSON.parse(text); }catch(e){ throw invalidAIOutputError(); }
+  if(!hasExactAIKeys(value,['answer']) || !validAIString(value.answer,4000)) throw invalidAIOutputError();
+  return value.answer;
+}
+function parseAIReportResponse(text){
+  let value;
+  try{ value=JSON.parse(text); }catch(e){ throw invalidAIOutputError(); }
+  const valid = hasExactAIKeys(value,['sections']) &&
+    Array.isArray(value.sections) && value.sections.length===3 &&
+    value.sections.every(section=>
+      hasExactAIKeys(section,['heading','style','items']) &&
+      validAIString(section.heading,80) &&
+      ['bullets','numbered'].includes(section.style) &&
+      Array.isArray(section.items) && section.items.length>0 && section.items.length<=8 &&
+      section.items.every(item=>validAIString(item,500))
+    );
+  if(!valid) throw invalidAIOutputError();
+  return value;
+}
+function invalidAIOutputError(){
+  const error = new Error('AI ส่งข้อมูลในรูปแบบที่ไม่ถูกต้อง');
+  error.code = 'AI_OUTPUT_INVALID';
+  return error;
 }
 
 /* ---------- AI Advisory chat (grounded Q&A via Claude API) ---------- */
@@ -3283,10 +3326,10 @@ async function sendAIChat(){
   AI_CHAT_HISTORY.push({role:'user', text:q});
   renderAIChat();
   $('#ai-chat-status').textContent = 'กำลังคิด...'; $('#ai-chat-status').className = 'chip orange';
-  const systemPrompt = 'คุณคือผู้ช่วย AI ด้านความปลอดภัยอัคคีภัย/อพยพหนีไฟของระบบ AI Emergency Digital Twin สำหรับอาคาร OCC YL (BTS) ตอบเป็นภาษาไทย กระชับ ตรงประเด็น อิงเฉพาะข้อมูลบริบทที่ให้มาเท่านั้น ห้ามอ้างเลขมาตรากฎหมายเอง ห้ามแนะนำให้พนักงานทั่วไปกลับเข้าพื้นที่อันตราย ระบุชัดเจนว่าคำตอบเป็น Decision Support เท่านั้น หากข้อมูลที่ให้มาไม่พอตอบ ให้บอกตรงๆ ว่าไม่มีข้อมูลเพียงพอ';
-  const userPrompt = `บริบทข้อมูลปัจจุบันในระบบ (JSON):\n${JSON.stringify(aiChatContext())}\n\nคำถาม: ${q}`;
+  const systemPrompt = 'คุณคือผู้ช่วย AI ด้านความปลอดภัยอัคคีภัย/อพยพหนีไฟของระบบ AI Emergency Digital Twin สำหรับอาคาร OCC YL (BTS) ตอบเป็นภาษาไทย กระชับ ตรงประเด็น อิงเฉพาะข้อมูลบริบทที่ให้มาเท่านั้น ห้ามอ้างเลขมาตรากฎหมายเอง ห้ามแนะนำให้พนักงานทั่วไปกลับเข้าพื้นที่อันตราย ระบุชัดเจนว่าคำตอบเป็น Decision Support เท่านั้น หากข้อมูลที่ให้มาไม่พอตอบ ให้บอกตรงๆ ว่าไม่มีข้อมูลเพียงพอ ส่งกลับเป็น JSON เท่านั้นในรูป {"answer":"คำตอบ"} โดย answer ต้องเป็น string และห้ามมีฟิลด์อื่น';
+  const userPrompt = `บริบทข้อมูลปัจจุบันในระบบ (JSON):\n${JSON.stringify(aiChatContext())}\n\nคำถาม: ${q}\n\nตอบเป็น JSON ตามรูปแบบที่กำหนดเท่านั้น`;
   try{
-    const answer = await callClaudeAPI(userPrompt, systemPrompt, 600);
+    const answer = parseAIChatResponse(await callClaudeAPI(userPrompt, systemPrompt, 600));
     AI_CHAT_HISTORY.push({role:'assistant', text:answer.trim()});
     updateAIStatusChip();
   }catch(e){
@@ -3309,12 +3352,48 @@ async function buildAIInsight(src){
     exits:r.exits, maxQueue:r.maxQueue, events:(r.events||[]).slice(0,30)
   };
   const openCAR = state.car.filter(c=>c.status==='doing').map(c=>c.item);
-  const systemPrompt = 'คุณคือ จป.วิชาชีพ ผู้เชี่ยวชาญวิเคราะห์ผลซ้อมอพยพหนีไฟของ BTS ตอบเป็นภาษาไทยเท่านั้น ห้ามอ้างอิงหรือระบุเลขมาตรากฎหมายเอง (ระบบแนบให้แยกต่างหากแล้ว) ห้ามเสนอให้พนักงานทั่วไปกลับเข้าพื้นที่อันตราย ตอบเป็น HTML ล้วน ใช้เฉพาะ <h3>, <ul><li>, <ol><li> ห้ามใส่ <html>, <body>, code fence หรือคำอธิบายอื่นนอกเหนือ HTML ที่ขอ';
-  const userPrompt = `ข้อมูลผลการซ้อม/จำลอง (JSON):\n${JSON.stringify(summary)}\n\nข้อบกพร่องที่ยังค้างแก้ไขจากการซ้อมก่อนหน้า: ${JSON.stringify(openCAR)}\n\nเขียนวิเคราะห์ 3 หัวข้อ ภาษาไทย กระชับ ตรงประเด็น:\n1. สิ่งที่ทำได้ดี (ไม่เกิน 3 bullet)\n2. จุดที่ต้องแก้ไข พร้อมเหตุผลสั้นๆ (ไม่เกิน 4 bullet)\n3. ข้อเสนอแนะเชิงระบบที่ทำได้จริง (ไม่เกิน 4 ข้อ แบบ numbered list)\n\nแต่ละหัวข้อขึ้นต้นด้วย <h3>ชื่อหัวข้อ</h3> ตามด้วย <ul> หรือ <ol> ตามความเหมาะสม`;
+  const systemPrompt = 'คุณคือ จป.วิชาชีพ ผู้เชี่ยวชาญวิเคราะห์ผลซ้อมอพยพหนีไฟของ BTS ผลลัพธ์เป็น Decision Support เท่านั้น ตอบเป็นภาษาไทยเท่านั้น ห้ามอ้างอิงหรือระบุเลขมาตรากฎหมายเอง (ระบบแนบให้แยกต่างหากแล้ว) ห้ามเสนอให้พนักงานทั่วไปกลับเข้าพื้นที่อันตราย การช่วยเหลือต้องทำโดยทีมที่ได้รับมอบหมายหรือหน่วยฉุกเฉินภายนอกเท่านั้น ห้ามเสนอใช้น้ำดับเพลิงจนกว่าจะยืนยันการตัดไฟแล้ว และอนุญาตให้กลับเข้าพื้นที่ได้เฉพาะหลังตรวจสอบความปลอดภัยและ IM ประกาศ Stand-down ส่งกลับเป็น JSON เท่านั้นตาม schema {"sections":[{"heading":"string","style":"bullets|numbered","items":["string"]}]} ต้องมี 3 sections ห้ามมีฟิลด์อื่น ห้ามใช้ HTML หรือ code fence';
+  const userPrompt = `ข้อมูลผลการซ้อม/จำลอง (JSON):\n${JSON.stringify(summary)}\n\nข้อบกพร่องที่ยังค้างแก้ไขจากการซ้อมก่อนหน้า: ${JSON.stringify(openCAR)}\n\nเขียนวิเคราะห์ 3 หัวข้อ ภาษาไทย กระชับ ตรงประเด็น:\n1. สิ่งที่ทำได้ดี (style "bullets", ไม่เกิน 3 items)\n2. จุดที่ต้องแก้ไข พร้อมเหตุผลสั้นๆ (style "bullets", ไม่เกิน 4 items)\n3. ข้อเสนอแนะเชิงระบบที่ทำได้จริง (style "numbered", ไม่เกิน 4 items)\n\nheading ยาวไม่เกิน 80 ตัวอักษร แต่ละ item ยาวไม่เกิน 500 ตัวอักษร ตอบเป็น JSON ตาม schema ที่กำหนดเท่านั้น`;
   const text = await callClaudeAPI(userPrompt, systemPrompt, 1200);
-  return `<h2>🤖 บทวิเคราะห์เชิงลึกจาก Claude API (claude-sonnet-5 · ผ่าน backend proxy)</h2>
-  <div class="law" style="border-left-color:var(--green)">${text}</div>
-  <p class="note">เนื้อหาส่วนนี้สร้างโดย AI จริงผ่าน Claude API ตามข้อมูลผลการซ้อม/จำลองที่บันทึกในระบบ ณ ขณะสร้างรายงาน — โปรดตรวจทานก่อนใช้งานจริง</p>`;
+  return parseAIReportResponse(text);
+}
+
+function appendAIInsight(container,report){
+  const title = document.createElement('h2');
+  title.textContent = '🤖 บทวิเคราะห์เชิงลึกจาก Claude API (claude-sonnet-5 · ผ่าน backend proxy)';
+  container.appendChild(title);
+  const insight = document.createElement('div');
+  insight.className = 'law';
+  insight.style.borderLeftColor = 'var(--green)';
+  report.sections.forEach(section=>{
+    const heading = document.createElement('h3');
+    heading.textContent = section.heading;
+    insight.appendChild(heading);
+    const list = document.createElement(section.style==='numbered' ? 'ol' : 'ul');
+    section.items.forEach(item=>{
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    insight.appendChild(list);
+  });
+  container.appendChild(insight);
+  const note = document.createElement('p');
+  note.className = 'note';
+  note.textContent = 'เนื้อหาส่วนนี้สร้างโดย AI จริงผ่าน Claude API ตามข้อมูลผลการซ้อม/จำลองที่บันทึกในระบบ ณ ขณะสร้างรายงาน — โปรดตรวจทานก่อนใช้งานจริง';
+  container.appendChild(note);
+}
+
+function appendAIError(container,error){
+  const notice = document.createElement('div');
+  notice.className = 'note';
+  notice.style.borderLeft = '3px solid var(--red)';
+  notice.style.padding = '10px 14px';
+  notice.style.marginTop = '16px';
+  notice.textContent = error && error.code==='AI_OUTPUT_INVALID'
+    ? '⚠️ AI ส่งข้อมูลในรูปแบบที่ไม่ถูกต้อง — แสดงเฉพาะส่วนแม่แบบเดิม'
+    : `⚠️ เรียก Claude API ไม่สำเร็จ: ${error && error.message ? error.message : 'Unknown error'} — แสดงเฉพาะส่วนแม่แบบเดิม`;
+  container.appendChild(notice);
 }
 
 /* ========================================================= */
@@ -3326,17 +3405,21 @@ async function genAAR(){
   $('#aar-loading').classList.add('show');
   await new Promise(res=>setTimeout(res, 900));
   let html = src==='sim' ? buildAARFromSim() : (src==='live' ? buildAARFromLiveDrill() : buildAARFromDrill());
+  let insight = null;
+  let aiError = null;
   if(aiAllowedForRole()){
     try{
-      const insight = await buildAIInsight(src);
-      if(insight) html += insight;
+      insight = await buildAIInsight(src);
     }catch(e){
-      html += `<div class="note" style="border-left:3px solid var(--red);padding:10px 14px;margin-top:16px">⚠️ เรียก Claude API ไม่สำเร็จ: ${esc(e.message)} — แสดงเฉพาะส่วนแม่แบบเดิม</div>`;
+      aiError = e;
     }
   }
   $('#aar-loading').classList.remove('show');
-  $('#aar-report').innerHTML = html;
-  $('#aar-report').classList.add('show');
+  const report = $('#aar-report');
+  report.innerHTML = html;
+  if(insight) appendAIInsight(report,insight);
+  if(aiError) appendAIError(report,aiError);
+  report.classList.add('show');
 }
 
 function lawBlock(){
