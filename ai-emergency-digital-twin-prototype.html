@@ -1476,7 +1476,9 @@ function validateScenario(sc, index){
   validInt(sc.id,label+'.id',1,1000000);
   validString(sc.name,label+'.name',160,false);
   validEnum(sc.type,SCENARIO_TYPES,label+'.type');
-  validEnum(String(sc.floor),FLOOR_IDS,label+'.floor');
+  if(!((typeof sc.floor==='number' && Number.isInteger(sc.floor) && sc.floor>=1 && sc.floor<=5)
+      || sc.floor==='ดาดฟ้า' || sc.floor==='Ground'))
+    stateValidationError(label+'.floor ไม่ถูกต้อง');
   validEnum(sc.origin,['svr','offA','offB','meet','lobby'],label+'.origin');
   if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(sc.time)) stateValidationError(label+'.time ไม่ถูกต้อง');
   validInt(sc.people,label+'.people',1,250);

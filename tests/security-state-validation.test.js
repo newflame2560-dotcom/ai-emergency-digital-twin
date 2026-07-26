@@ -7,6 +7,7 @@ const html = fs.readFileSync(new URL('../ai-emergency-digital-twin-prototype.htm
 const between = (start, end) => html.slice(html.indexOf(start), html.indexOf(end, html.indexOf(start)));
 const validationSource = between('const STATE_KEYS =', 'function saveState(){');
 const persistenceSource = between('function saveState(){', 'loadState();');
+const exportSource = between('function exportState(){', 'function importState(ev){');
 const importSource = between('function importState(ev){', 'function toast(msg){');
 const escapingSource = between('function esc(v){', 'function roomGuidance(');
 const renderScenarioSource = between('function renderScenarioList(){', 'renderScenarioList();');
@@ -57,9 +58,12 @@ function validationContext(initial=fixture){
 function entryContext(initial=fixture, stored=null){
   const values = new Map();
   if(stored !== null) values.set('aidt_occ_state_v1', stored);
-  const calls = {removed:[], rendered:0, toasts:[]};
+  const calls = {removed:[], rendered:0, toasts:[], exportedJson:null, downloaded:false};
   class FileReader {
     readAsText(file){ this.result=file.content; this.onload(); }
+  }
+  class Blob {
+    constructor(parts){ this.parts=parts; }
   }
   const context = vm.createContext({
     state: copy(initial),
@@ -69,6 +73,12 @@ function entryContext(initial=fixture, stored=null){
       removeItem:key=>{ calls.removed.push(key); values.delete(key); }
     },
     FileReader,
+    Blob,
+    URL: {
+      createObjectURL:blob=>{ calls.exportedJson=blob.parts.join(''); return 'blob:test'; },
+      revokeObjectURL:()=>{}
+    },
+    document: {createElement:()=>({click:()=>{ calls.downloaded=true; }})},
     canUse:()=>true,
     renderScenarioList:()=>calls.rendered++,
     renderCAR:()=>calls.rendered++,
@@ -78,7 +88,7 @@ function entryContext(initial=fixture, stored=null){
     toast:message=>calls.toasts.push(message)
   });
   vm.runInContext(
-    `const STORAGE_KEY='aidt_occ_state_v1';\n${validationSource}\n${persistenceSource}\n${importSource}\nthis.loadState=loadState;this.saveState=saveState;this.importState=importState;`,
+    `const STORAGE_KEY='aidt_occ_state_v1';\n${validationSource}\n${persistenceSource}\n${exportSource}\n${importSource}\nthis.loadState=loadState;this.saveState=saveState;this.exportState=exportState;this.importState=importState;`,
     context
   );
   return {context, values, calls};
@@ -127,6 +137,68 @@ test('save/load performs a valid round-trip through localStorage', () => {
   context.loadState();
   assert.equal(context.state.scenarios[0].name, 'ทดสอบ');
   assert.deepEqual(calls.removed, []);
+});
+
+function stateWithFloor(floor){
+  const value = copy(fixture);
+  value.scenarios[0].floor = floor;
+  value.scenarios[0].name = `ทดสอบชั้น ${floor}`;
+  return value;
+}
+
+function assertExportImportReloadRoundTrip(floor){
+  const source = entryContext(stateWithFloor(floor));
+  source.context.saveState();
+  source.context.loadState();
+  assert.equal(source.context.state.scenarios[0].floor, floor);
+  assert.deepEqual(source.calls.removed, []);
+
+  source.context.exportState();
+  assert.equal(source.calls.downloaded, true);
+  const exported = JSON.parse(source.calls.exportedJson);
+  assert.equal(exported.scenarios[0].floor, floor);
+
+  const destination = entryContext();
+  destination.context.importState({
+    target:{files:[{size:source.calls.exportedJson.length,content:source.calls.exportedJson}],value:'selected'}
+  });
+  assert.equal(destination.context.state.scenarios[0].floor, floor);
+  destination.context.state.scenarios[0].floor = 5;
+  destination.context.loadState();
+  assert.equal(destination.context.state.scenarios[0].floor, floor);
+  assert.deepEqual(destination.calls.removed, []);
+}
+
+test('Roof scenario survives save, export, import, and reload', () => {
+  assertExportImportReloadRoundTrip('ดาดฟ้า');
+});
+
+test('Ground Floor scenario survives save, export, import, and reload', () => {
+  assertExportImportReloadRoundTrip('Ground');
+});
+
+test('numeric scenario floors 1 through 5 validate and do not clear localStorage', () => {
+  for(let floor=1;floor<=5;floor++){
+    const value = stateWithFloor(floor);
+    assert.doesNotThrow(() => validationContext(value).validateJson(JSON.stringify(value)));
+    const loaded = entryContext(fixture, JSON.stringify(value));
+    loaded.context.loadState();
+    assert.equal(loaded.context.state.scenarios[0].floor, floor);
+    assert.deepEqual(loaded.calls.removed, []);
+    assert.equal(loaded.values.has('aidt_occ_state_v1'), true);
+  }
+});
+
+test('invalid scenario floors and wrong floor types are rejected', () => {
+  const context = validationContext();
+  for(const floor of [0,6,1.5,'1','RF','GF','Roof','Ground Floor',null,true,{},[]]){
+    const value = stateWithFloor(floor);
+    assert.throws(
+      () => context.validateJson(JSON.stringify(value)),
+      /scenario\[0\]\.floor/,
+      `ควรปฏิเสธ floor=${JSON.stringify(floor)}`
+    );
+  }
 });
 
 test('load rejects tainted localStorage atomically and removes it', () => {
