@@ -2469,14 +2469,26 @@ function renderScenarioList(){
       <div class="top">
         <h4>${esc(sc.name)} ${sc.id===state.activeScenario?'<span class="chip orange">ใช้งานอยู่</span>':''}</h4>
         <div>
-          ${sc.id!==state.activeScenario?`<button class="btn sm" onclick="setActiveScenario(${sc.id})">ใช้งาน</button>`:''}
-          <button class="btn sm primary" onclick="setActiveScenario(${sc.id});goPage('sim');simReset();simToggle()">▶ รัน</button>
-          <button class="btn sm danger" onclick="delScenario(${sc.id})">ลบ</button>
+          ${sc.id!==state.activeScenario?`<button class="btn sm" data-scenario-action="activate" data-scenario-id="${sc.id}">ใช้งาน</button>`:''}
+          <button class="btn sm primary" data-scenario-action="run" data-scenario-id="${sc.id}">▶ รัน</button>
+          <button class="btn sm danger" data-scenario-action="delete" data-scenario-id="${sc.id}">ลบ</button>
         </div>
       </div>
       <div class="meta">${esc(scDesc(sc))}</div>
       ${sc.note?`<div class="meta">📝 ${esc(sc.note)}</div>`:''}
     </div>`).join('');
+  el.querySelectorAll('[data-scenario-action]').forEach(button=>{
+    button.addEventListener('click', ()=>{
+      const id = Number(button.dataset.scenarioId);
+      if(!Number.isInteger(id) || !state.scenarios.some(sc=>sc.id===id)) return;
+      if(button.dataset.scenarioAction==='activate') setActiveScenario(id);
+      if(button.dataset.scenarioAction==='run'){
+        setActiveScenario(id);
+        goPage('sim'); simReset(); simToggle();
+      }
+      if(button.dataset.scenarioAction==='delete') delScenario(id);
+    });
+  });
 }
 renderScenarioList();
 
