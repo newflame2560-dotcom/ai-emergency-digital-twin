@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Emergency Digital Twin — Vector Floor Plan Simulation | YL OCC</title>
+<style>
+:root{
+  --bg:#f3f5f9; --card:#ffffff; --line:#e2e8f0; --ink:#16202a; --muted:#64748b;
+  --navy:#1e3a5f; --teal:#0f766e; --teal-soft:#e6f4f2;
+  --crit:#dc2626; --high:#f97316; --mhigh:#f59e0b; --med:#3b82f6; --lmed:#22c55e;
+  --route:#16a34a; --blocked:#dc2626;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Sukhumvit Set","Noto Sans Thai","Thonburi",Tahoma,sans-serif;
+  font-size:14.5px; line-height:1.55;
+}
+header.top{
+  background:var(--navy); color:#fff; padding:14px 24px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+header.top .logo{width:38px;height:38px;border-radius:9px;background:var(--teal);display:grid;place-items:center;font-size:20px}
+header.top h1{font-size:17px;font-weight:700;line-height:1.3}
+header.top h1 small{display:block;font-size:12px;font-weight:400;color:#b8c7d9}
+.caveat-bar{
+  background:#fff7e6; border-bottom:1px solid #f0dcae; color:#8a6100;
+  padding:8px 24px; font-size:12.5px;
+}
+.layout{display:grid; grid-template-columns:256px 1fr 320px; gap:16px; padding:16px 20px; max-width:1720px; margin:auto; align-items:start}
+@media(max-width:1200px){.layout{grid-template-columns:230px 1fr}.detail-col{grid-column:1/-1}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(22,32,42,.05)}
+.card h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px}
+.card + .card{margin-top:14px}
+
+/* sidebar */
+.side .fbtn{
+  display:block;width:100%;text-align:left;padding:9px 12px;margin-bottom:5px;border-radius:8px;
+  border:1px solid var(--line);background:#fff;font:inherit;font-size:13.5px;cursor:pointer;color:var(--ink)
+}
+.side .fbtn:hover{border-color:var(--teal)}
+.side .fbtn.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
+.toggles label{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer}
+.toggles input{accent-color:var(--teal);width:15px;height:15px}
+.preset-btn{
+  display:block;width:100%;text-align:left;padding:8px 10px;margin-bottom:6px;border-radius:8px;
+  border:1px solid var(--line);background:#fff;font:inherit;font-size:12.5px;cursor:pointer;line-height:1.35;color:var(--ink)
+}
+.preset-btn:hover{border-color:var(--high)}
+.preset-btn.on{border-color:var(--high);background:#fff4ec;font-weight:700}
+.preset-btn small{display:block;color:var(--muted);font-weight:400}
+.clear-btn{width:100%;padding:8px;border-radius:8px;border:1px dashed var(--muted);background:none;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;margin-top:4px}
+
+/* main plan */
+.plan-wrap{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.plan-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.plan-head b{color:var(--navy);font-size:15px}
+.plan-head .chip{font-size:11.5px;background:var(--teal-soft);color:var(--teal);padding:3px 10px;border-radius:20px;font-weight:700}
+svg{display:block;width:100%;height:auto}
+.zone{cursor:pointer;transition:filter .12s}
+.zone:hover{filter:brightness(.96)}
+.zone.sel rect{stroke:#0f766e !important; stroke-width:3 !important}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--line)}
+.legend span{display:flex;align-items:center;gap:5px}
+.lg{width:11px;height:11px;border-radius:3px;display:inline-block}
+@keyframes firepulse{0%{r:12;opacity:.85}70%{r:30;opacity:0}100%{r:30;opacity:0}}
+.firewave{animation:firepulse 1.6s ease-out infinite}
+
+/* stats */
+.simgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+@media(max-width:900px){.simgrid{grid-template-columns:repeat(2,1fr)}}
+.stat{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .lb{font-size:11px;color:var(--muted)}
+.stat .v{font-size:20px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.stat .v.warn{color:var(--crit)}
+.bar{height:8px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:6px;background:var(--high)}
+.feed{list-style:none;font-size:12.5px;max-height:170px;overflow-y:auto}
+.feed li{padding:5px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px}
+.feed li:last-child{border:none}
+.feed .t{color:var(--muted);min-width:38px;font-variant-numeric:tabular-nums}
+.advisory{background:var(--teal-soft);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;margin-top:12px}
+.advisory ul{margin:4px 0 0 18px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* detail */
+.detail dl{font-size:13px}
+.detail dt{color:var(--muted);font-size:11.5px;margin-top:9px}
+.detail dd{margin:1px 0 0}
+.risk-chip{display:inline-block;padding:2px 10px;border-radius:14px;font-size:11.5px;font-weight:700;color:#fff}
+.tagline{display:flex;gap:5px;flex-wrap:wrap}
+.tag{background:#eef2f7;color:#475569;font-size:11px;padding:2px 8px;border-radius:12px}
+
+/* AAR */
+.aar h4{font-size:13px;color:var(--teal);margin:14px 0 4px}
+.aar h4:first-of-type{margin-top:6px}
+.aar ul{margin:2px 0 0 18px;font-size:13px}
+.aar li{margin-bottom:3px}
+.guard{background:#fef2f2;border-left:3px solid var(--crit);border-radius:0 8px 8px 0;padding:10px 12px;font-size:12.5px;margin-top:10px}
+.guard ul{margin:4px 0 0 16px}
+.note{font-size:11.5px;color:var(--muted);margin-top:8px}
+footer{padding:14px 24px 30px;text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">🛰️</div>
+  <h1>AI Emergency Digital Twin — Vector Floor Plan Simulation
+    <small>YL OCC — Operation Control Center · แผนผังจำลองเวกเตอร์สร้างใหม่จาก Floor Plan Data Matrix (ไม่ใช้ภาพแบบอาคาร)</small>
+  </h1>
+</header>
+<div class="caveat-bar">
+  ⚠️ <b>Prototype schematic only — verify with official floor plan before operational use</b> · สร้างจากข้อมูล Small Power System Reference / Layout Plan (2021-05-17_YL OCC.pdf) ไม่ใช่แบบระบบป้องกันอัคคีภัย ห้ามใช้ยืนยันตำแหน่งถังดับเพลิง, Hose Reel, MCP, กระดิ่ง, Detector, ป้ายทางออก, ไฟฉุกเฉิน หรือเส้นทางอพยพทางการ จนกว่าจะตรวจสอบกับแบบ Fire Protection / Evacuation Plan
+</div>
+
+<div class="layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="card">
+      <h3>เลือกชั้น (Floor Selector)</h3>
+      <div id="floor-btns"></div>
+    </div>
+    <div class="card toggles">
+      <h3>ชั้นข้อมูล (Layers)</h3>
+      <label><input type="checkbox" id="ly-risk" checked onchange="renderPlan()"> Show Risk Zones</label>
+      <label><input type="checkbox" id="ly-route" checked onchange="renderPlan()"> Show Evacuation Routes</label>
+      <label><input type="checkbox" id="ly-scen" checked onchange="renderPlan()"> Show Scenario Locations</label>
+      <label><input type="checkbox" id="ly-occ" onchange="renderPlan()"> Show Occupancy</label>
+      <label><input type="checkbox" id="ly-rescue" checked onchange="renderPlan()"> Show Rescue Tasks</label>
+    </div>
+    <div class="card">
+      <h3>Scenario Presets</h3>
+      <div id="preset-list"></div>
+      <button class="clear-btn" onclick="clearScenario()">✕ ล้างสถานการณ์</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <div class="plan-wrap">
+      <div class="plan-head">
+        <b id="plan-title">—</b>
+        <span class="chip" id="plan-chip">Vector schematic · editable</span>
+      </div>
+      <svg id="plan-svg" viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="legend">
+        <span><span class="lg" style="background:var(--crit)"></span> Critical</span>
+        <span><span class="lg" style="background:var(--high)"></span> High</span>
+        <span><span class="lg" style="background:var(--mhigh)"></span> Medium-High</span>
+        <span><span class="lg" style="background:var(--med)"></span> Medium</span>
+        <span><span class="lg" style="background:var(--lmed)"></span> Low-Medium</span>
+        <span><span class="lg" style="background:var(--route)"></span> เส้นทางอพยพ → MST-01</span>
+        <span><span class="lg" style="background:none;border:1.5px dashed var(--blocked)"></span> เส้นทางถูกปิด</span>
+        <span><span class="lg" style="background:#94a3b8;opacity:.5"></span> พื้นที่ควันปกคลุม</span>
+        <span>🪜 บันได · 🛗 ลิฟต์ · ⛑️ First Aid · 👥 Visitor · 🎓 Training · 🔧 Technical · 🚩 Command Post</span>
+      </div>
+    </div>
+
+    <!-- Simulation Panel -->
+    <div class="card" style="margin-top:14px">
+      <h3>Simulation Panel <span id="sim-sc-name" style="color:var(--muted);font-weight:400;font-size:12.5px">— ยังไม่ได้เลือกสถานการณ์</span></h3>
+      <div class="btnrow">
+        <button class="btn primary" id="btn-run" onclick="runSim()" disabled>▶ รันจำลอง (Mock)</button>
+        <button class="btn" id="btn-aar" onclick="genAAR()" disabled>📄 สร้าง AI AAR Summary</button>
+      </div>
+      <div class="simgrid">
+        <div class="stat"><div class="lb">Estimated Evacuation Time</div><div class="v" id="st-time">—</div></div>
+        <div class="stat"><div class="lb">Bottleneck Score @ MST-01</div><div class="v" id="st-btl">—</div><div class="bar"><i id="st-btl-bar" style="width:0%"></i></div></div>
+        <div class="stat"><div class="lb">People at Risk</div><div class="v" id="st-risk">—</div></div>
+        <div class="stat"><div class="lb">Rescue Task</div><div class="v" id="st-rescue" style="font-size:14px;line-height:1.4;padding-top:4px">—</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="lb" style="font-size:11.5px;color:var(--muted);margin-bottom:4px">สถานะการจำลอง (Event Feed)</div>
+        <ul class="feed" id="sim-feed"><li><span class="t">—</span><span>เลือกสถานการณ์จาก Scenario Presets แล้วกดรันจำลอง</span></li></ul>
+      </div>
+      <div class="advisory" id="sim-advisory" style="display:none"></div>
+    </div>
+
+    <!-- AAR Panel -->
+    <div class="card aar" id="aar-panel" style="margin-top:14px;display:none">
+      <h3>AI AAR Summary <span style="color:var(--muted);font-weight:400;font-size:12px">(Mock — Decision Support Only)</span></h3>
+      <div id="aar-body"></div>
+      <div class="guard">
+        <b>Safety Guardrails</b>
+        <ul>
+          <li>AI เป็น Decision Support เท่านั้น การตัดสินใจจริงอยู่ที่ผู้บัญชาการเหตุการณ์และแผนฉุกเฉินที่อนุมัติแล้ว</li>
+          <li>Prototype นี้ไม่ใช่แบบวิศวกรรมทางการ ต้องตรวจสอบกับ Fire Protection Plan / Evacuation Plan / Site Inspection ก่อนใช้จริง</li>
+          <li>ห้ามใช้ระบบนี้สั่งให้พนักงานทั่วไปกลับเข้าไปในพื้นที่อันตราย</li>
+          <li>การค้นหาและกู้ภัยต้องดำเนินการโดยทีมที่ได้รับมอบหมายหรือหน่วยงานฉุกเฉินเท่านั้น</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ DETAIL PANEL ============ -->
+  <aside class="detail-col">
+    <div class="card detail" id="detail-card">
+      <h3>Room / Zone Detail</h3>
+      <div id="detail-body" style="font-size:13px;color:var(--muted)">คลิกห้องบนแผนผังเพื่อดูรายละเอียด</div>
+    </div>
+    <div class="card">
+      <h3>หมายเหตุแหล่งข้อมูล</h3>
+      <div style="font-size:12.5px;color:var(--muted)">
+        Building: <b style="color:var(--ink)">YL OCC — Operation Control Center</b><br>
+        Drawing Source: 2021-05-17_YL OCC.pdf<br>
+        Drawing Type: Small Power System Reference / Layout Plan<br>
+        Use Case: <b style="color:#8a6100">Prototype Data Only</b>
+        <div class="note">แผนผังนี้เป็น simplified schematic วาดใหม่ทั้งหมดด้วย SVG จาก Data Matrix ไม่ได้ trace จากภาพแบบอาคาร และไม่ตรงสเกลวิศวกรรม 100%</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer>AI Emergency Digital Twin — Vector Floor Plan Simulation · ต้นแบบ v1.0 · ข้อมูลจำลองทั้งหมด · Prototype schematic only — verify with official floor plan before operational use</footer>
+
+<script>
+/* ============================================================
+   Floor Plan Data — สร้างใหม่จาก Floor Plan Data Matrix เท่านั้น
+   (แก้ไข/เพิ่มห้องได้โดยเพิ่มรายการในตารางด้านล่าง)
+   ============================================================ */
+function Z(id,name,fn,risk,tags,scen,node,x,y,w,h,occ){
+  return {id,name,floor:null,function:fn,riskLevel:risk,tags,scenarioUseCase:scen,nearestEvacuationNode:node,x,y,w,h,occ};
+}
+const NODE_MST = 'MST-01 ผ่านทางเดินกลาง';
+
+const floorPlanData = {
+  building: "YL OCC",
+  floors: [
+    {id:"GF", name:"Ground Floor", zones:[
+      Z('gf-carpark','Car Park (ภายนอก)','ลานจอด / จุดเข้าถึงรถฉุกเฉิน','Low-Medium','car_park, external_access','Fire truck access','Main entrance / External Assembly Area', 30,60,110,148, 0),
+      Z('gf-mst','MST-01 / Stair Core','บันไดหลัก / แกนอพยพ','Critical','stair, evacuation_core','Main evacuation route','—', 150,60,80,148, 0),
+      Z('gf-lift','Lift Hall','โถงลิฟต์ (ห้ามใช้ขณะเกิดเหตุ)','Medium','lift_hall, no_lift_fire','No lift during fire',NODE_MST, 240,60,70,148, 0),
+      Z('gf-ahu','AHU','ห้องเครื่องปรับอากาศ','Medium-High','ahu, smoke_spread, technical','Smoke via HVAC',NODE_MST, 320,60,70,148, 0),
+      Z('gf-ctrl','Control Room 1','ห้องควบคุมการเดินรถ','High','control_room, critical_operation, technical','Control room adjacent smoke',NODE_MST, 400,60,140,148, 6),
+      Z('gf-access','Access Room','ห้องระบบควบคุมการเข้าถึง','High','access_control, technical','Access room smoke',NODE_MST, 550,60,90,148, 1),
+      Z('gf-strong','Strong Room','ห้องนิรภัย','Medium-High','secure_room, restricted','Delayed access',NODE_MST, 650,60,90,148, 0),
+      Z('gf-n2','N2 Room','ห้องก๊าซไนโตรเจน','High','gas_room, technical_hazard','N2 incident',NODE_MST, 750,60,80,148, 0),
+      Z('gf-store','Storage','ห้องเก็บของ','Medium-High','storage, combustible_load','Store fire (Preset)',NODE_MST, 840,60,130,148, 1),
+      Z('gf-corridor','Main Corridor','ทางเดินหลัก / เส้นทางอพยพ','Critical','corridor, bottleneck','Corridor smoke','MST-01 / Main Lobby', 30,208,940,56, 0),
+      Z('gf-vip','VIP Presentation','ห้องนำเสนอผู้บริหาร','Medium','meeting_room, visitor','Visitor evacuation',NODE_MST, 30,264,140,140, 8),
+      Z('gf-lobby','Information & Lobby','โถงต้อนรับ / ทางเข้าหลัก','Medium','public_area, visitor, main_entrance','Visitor headcount','Main entrance → External Assembly Area', 180,264,190,140, 15),
+      Z('gf-firstaid','First Aid','ห้องปฐมพยาบาล','Low-Medium','first_aid, casualty_support','EMS handoff',NODE_MST, 380,264,90,140, 2),
+      Z('gf-security','Security Office','สำนักงาน รปภ.','Medium','security, response_team','Security dispatch',NODE_MST, 480,264,100,140, 3),
+      Z('gf-super','Building Supervisor','ฝ่ายอาคาร','Low-Medium','facility, technical_support','Building coordination',NODE_MST, 590,264,110,140, 2),
+      Z('gf-mrta','MRTA Office','สำนักงาน MRTA','Low-Medium','office','Office evacuation',NODE_MST, 710,264,100,140, 6),
+      Z('gf-toilet','Disabled Toilet','ห้องน้ำผู้พิการ','Low-Medium','accessibility, assistance_required','Assisted evacuation',NODE_MST, 820,264,60,140, 0),
+      Z('gf-pantry','Pantry','ครัวสวัสดิการ','Medium','pantry, ignition_source','Small fire / smoke',NODE_MST, 890,264,80,140, 2),
+    ]},
+    {id:"F2", name:"2nd Floor", zones:[
+      Z('f2-res1','Reserved Office 1','สำนักงานสำรอง','Low-Medium','office','Office evacuation',NODE_MST, 30,60,110,148, 8),
+      Z('f2-mst','MST-01','บันไดหลัก / แกนอพยพ','Critical','stair, evacuation_core','Main stair route','—', 150,60,80,148, 0),
+      Z('f2-lift','Lift Hall','โถงลิฟต์ (ห้ามใช้ขณะเกิดเหตุ)','Medium','lift_hall, no_lift_fire','No lift warning',NODE_MST, 240,60,70,148, 0),
+      Z('f2-ahu','AHU','ห้องเครื่องปรับอากาศ','Medium-High','ahu, smoke_spread, technical','Smoke spread',NODE_MST, 320,60,70,148, 0),
+      Z('f2-osd','Miscellaneous / OSD Store','ห้องเก็บของ','Medium-High','store, combustible_load','Store fire',NODE_MST, 400,60,110,148, 1),
+      Z('f2-pantry','Pantry','ครัวสวัสดิการ','Medium','pantry, ignition_source','Pantry incident',NODE_MST, 520,60,80,148, 2),
+      Z('f2-doc','DOC Store','ห้องเก็บเอกสาร','Medium-High','document_store, combustible_load','DOC Store fire (Preset)',NODE_MST, 610,60,110,148, 1),
+      Z('f2-locker','Locker Rooms','ห้องล็อกเกอร์','Medium','locker_room','Search and clear',NODE_MST, 730,60,110,148, 4),
+      Z('f2-pau','Precision Air Unit','ห้องระบบระบายความร้อน','Medium-High','cooling, technical','Cooling incident',NODE_MST, 850,60,120,148, 0),
+      Z('f2-corridor','Main Corridor','ทางเดินหลัก / เส้นทางอพยพ','Critical','corridor, bottleneck','Corridor smoke','MST-01', 30,208,940,56, 0),
+      Z('f2-tsd','TSD Office','สำนักงาน TSD','Low-Medium','office','Floor evacuation',NODE_MST, 30,264,120,140, 10),
+      Z('f2-ocd','OCD Office','สำนักงาน OCD','Low-Medium','office','Floor evacuation',NODE_MST, 160,264,120,140, 10),
+      Z('f2-meet','Meeting Room','ห้องประชุม','Medium','meeting_room, group_occupancy','Meeting evacuation',NODE_MST, 290,264,110,140, 10),
+      Z('f2-imr','Incident Management Room','ห้องบริหารเหตุการณ์','High','incident_management, command_support, technical','IMR evacuation (Preset)',NODE_MST, 410,264,140,140, 6),
+      Z('f2-sysadmin','System Admin / PTR Room','ห้องระบบ IT','High','it_support, technical','IT support smoke',NODE_MST, 560,264,130,140, 4),
+      Z('f2-lounge','Staff Lounge','ห้องพักผ่อนพนักงาน','Medium','staff_lounge','Staff evacuation',NODE_MST, 700,264,110,140, 6),
+      Z('f2-dorm','Dorm / Bunk Bed Rooms','ห้องพักเวร','Medium','sleeping_area, delayed_response','After-hours response',NODE_MST, 820,264,150,140, 6),
+    ]},
+    {id:"F3", name:"3rd Floor", zones:[
+      Z('f3-osdstore','OSD Store','ห้องเก็บของ (ห้องต้นเพลิงแผนซ้อม 3-19/318)','Medium-High','store, combustible_load','OCC Drill 2568 store fire',NODE_MST, 30,60,110,148, 1),
+      Z('f3-mst','MST-01 Landing / MST-01','บันไดหลัก / แกนอพยพ','Critical','stair, evacuation_core','Main evacuation route','—', 150,60,80,148, 0),
+      Z('f3-lift','Lift Hall','โถงลิฟต์ (ห้ามใช้ขณะเกิดเหตุ)','Medium','lift_hall, no_lift_fire','No lift during fire',NODE_MST, 240,60,70,148, 0),
+      Z('f3-ahu','AHU','ห้องเครื่องปรับอากาศ','Medium-High','ahu, smoke_spread, technical','Smoke via HVAC',NODE_MST, 320,60,70,148, 0),
+      Z('f3-n2','N2 Room','ห้องก๊าซไนโตรเจน','High','gas_room, technical_hazard','N2 room incident',NODE_MST, 400,60,80,148, 0),
+      Z('f3-ups','UPS Battery Room','ห้องแบตเตอรี่สำรองไฟ','Critical','battery_room, electrical_hazard, smoke_toxicity, technical','Battery fire (Preset)',NODE_MST, 490,60,140,148, 0),
+      Z('f3-sig','Signalling Equipment Room','ห้องอุปกรณ์อาณัติสัญญาณ','High','signalling, critical_system, electrical_hazard, technical','Signalling incident (Preset)',NODE_MST, 640,60,330,148, 2),
+      Z('f3-corridor','Main Corridor','ทางเดินหลัก / เส้นทางอพยพ','Critical','corridor, bottleneck','Smoke-filled corridor','MST-01', 30,208,940,56, 0),
+      Z('f3-ssd','SSD Office','สำนักงาน SSD','Low-Medium','office','Office evacuation',NODE_MST, 30,264,120,140, 10),
+      Z('f3-res2','Reserved Office 2','สำนักงานสำรอง','Low-Medium','office','Office evacuation',NODE_MST, 160,264,110,140, 8),
+      Z('f3-osdoff','OSD Office','สำนักงาน OSD','Low-Medium','office','Floor evacuation',NODE_MST, 280,264,110,140, 10),
+      Z('f3-pantry','Pantry','ครัวสวัสดิการ','Medium','pantry, ignition_source','Pantry incident',NODE_MST, 400,264,80,140, 2),
+      Z('f3-meet','Meeting Room / Staff Lounge','ห้องประชุม / พักผ่อน','Medium','meeting_room, group_occupancy','Meeting evacuation',NODE_MST, 490,264,120,140, 10),
+      Z('f3-afc','AFC CC','ห้องควบคุมระบบจัดเก็บค่าโดยสาร','High','afc, critical_operation, technical','AFC room incident',NODE_MST, 620,264,100,140, 4),
+      Z('f3-itd','ITD Server','ห้องเซิร์ฟเวอร์','High','server_room, electrical_hazard, technical','Server room fire (Preset)',NODE_MST, 730,264,110,140, 2),
+      Z('f3-visitor','Visitor\'s Gallery','ระเบียงผู้เยี่ยมชม','Medium','visitor_area, unfamiliar_route','Missing visitor (Preset)','ทางเดินกลาง → MST-01 (เส้นทางไกลสุดของชั้น)', 850,264,120,140, 8),
+    ]},
+    {id:"F4", name:"4th Floor", zones:[
+      Z('f4-safety','Safety','สำนักงานความปลอดภัย','Low-Medium','safety_office, response_support','Safety coordination',NODE_MST, 30,60,110,148, 6),
+      Z('f4-mst','MST-01','บันไดหลัก / แกนอพยพ','Critical','stair, evacuation_core','Evacuation route','—', 150,60,80,148, 0),
+      Z('f4-lift','Lift Hall','โถงลิฟต์ (ห้ามใช้ขณะเกิดเหตุ)','Medium','lift_hall, no_lift_fire','No lift during fire',NODE_MST, 240,60,70,148, 0),
+      Z('f4-ahu','AHU','ห้องเครื่องปรับอากาศ','Medium-High','ahu, smoke_spread, technical','AHU smoke spread',NODE_MST, 320,60,70,148, 0),
+      Z('f4-sfd','SFD / SCD Store','ห้องเก็บของ','Medium-High','store, combustible_load','Store fire',NODE_MST, 400,60,110,148, 1),
+      Z('f4-sec','Security','สำนักงาน Security','Low-Medium','office','Office evacuation',NODE_MST, 520,60,100,148, 8),
+      Z('f4-quality','Quality','สำนักงาน Quality','Low-Medium','office','Office evacuation',NODE_MST, 630,60,100,148, 8),
+      Z('f4-hr','HR Recruitment','ฝ่ายสรรหาบุคลากร','Low-Medium','office, visitor','Visitor evacuation',NODE_MST, 740,60,110,148, 8),
+      Z('f4-interview','Interview Rooms','ห้องสัมภาษณ์','Medium','visitor_area, small_room','Visitor sweep',NODE_MST, 860,60,110,148, 4),
+      Z('f4-corridor','Main Corridor','ทางเดินหลัก / เส้นทางอพยพ','Critical','corridor, bottleneck','Corridor smoke','MST-01', 30,208,940,56, 0),
+      Z('f4-opsdir','Operations Director Room','ห้องผู้อำนวยการปฏิบัติการ','Low-Medium','office','Management evacuation',NODE_MST, 30,264,120,140, 2),
+      Z('f4-ebmmgr','EBM Manager Office','สำนักงานผู้จัดการ EBM','Low-Medium','office','Office evacuation',NODE_MST, 160,264,110,140, 4),
+      Z('f4-ebmstaff','EBM Staff Office','สำนักงานพนักงาน EBM','Low-Medium','office','Office evacuation',NODE_MST, 280,264,130,140, 14),
+      Z('f4-meet1','Meeting Room 1','ห้องประชุม 1','Medium','meeting_room, group_occupancy','Meeting evacuation',NODE_MST, 420,264,100,140, 8),
+      Z('f4-meet2','Meeting Room 2','ห้องประชุม 2','Medium','meeting_room, group_occupancy','Meeting evacuation',NODE_MST, 530,264,100,140, 8),
+      Z('f4-files','Central Files Room','ห้องเอกสารกลาง','Medium-High','file_storage, combustible_load','Files room fire (Preset)',NODE_MST, 640,264,120,140, 1),
+      Z('f4-exam','Exam Room','ห้องสอบ','Medium','exam_room, group_occupancy','Exam evacuation',NODE_MST, 770,264,100,140, 6),
+      Z('f4-pantry','Pantry','ครัวสวัสดิการ','Medium','pantry, ignition_source','Pantry fire',NODE_MST, 880,264,90,140, 2),
+    ]},
+    {id:"F5", name:"5th Floor", zones:[
+      Z('f5-t1','Training Office 1','ห้องอบรม 1','Medium','training, high_occupancy','Training evacuation',NODE_MST, 30,60,110,148, 16),
+      Z('f5-mst','MST-01','บันไดหลัก / แกนอพยพ','Critical','stair, evacuation_core','Main stair route','—', 150,60,80,148, 0),
+      Z('f5-lift','Lift Hall','โถงลิฟต์ (ห้ามใช้ขณะเกิดเหตุ)','Medium','lift_hall, no_lift_fire','No lift during fire',NODE_MST, 240,60,70,148, 0),
+      Z('f5-ahu','AHU','ห้องเครื่องปรับอากาศ','Medium-High','ahu, smoke_spread, technical','Smoke spread',NODE_MST, 320,60,70,148, 0),
+      Z('f5-doc','DOC Store','ห้องเก็บเอกสาร','Medium-High','document_store, combustible_load','Document store fire',NODE_MST, 400,60,100,148, 1),
+      Z('f5-rest','Teacher Rest Room','ห้องพักครูฝึก','Medium','rest_area, delayed_response','After-hours delayed response',NODE_MST, 510,60,100,148, 3),
+      Z('f5-tnd','Training TND Office','สำนักงานฝ่ายฝึกอบรม','Low-Medium','office, training_support','Office evacuation',NODE_MST, 620,60,110,148, 6),
+      Z('f5-pantry','Pantry','ครัวสวัสดิการ','Medium','pantry, ignition_source','Pantry fire',NODE_MST, 740,60,80,148, 2),
+      Z('f5-troom','Training Room','ห้องอบรมรวม','Medium','training_room, high_occupancy','Training Room evacuation (Preset)',NODE_MST, 830,60,140,148, 18),
+      Z('f5-corridor','Main Corridor','ทางเดินหลัก / เส้นทางอพยพ','Critical','corridor, bottleneck','Corridor smoke (Preset)','MST-01', 30,208,940,56, 0),
+      Z('f5-t2','Training Office 2','ห้องอบรม 2','Medium','training, high_occupancy','Training bottleneck',NODE_MST, 30,264,130,140, 14),
+      Z('f5-t21','Training Office 2.1','ห้องอบรม 2.1','Medium','training, high_occupancy','Training evacuation',NODE_MST, 170,264,110,140, 12),
+      Z('f5-t3','Training Office 3','ห้องอบรม 3','Medium','training, high_occupancy','Classroom evacuation',NODE_MST, 290,264,140,140, 16),
+      Z('f5-cbi','CBI','ห้องฝึกอบรมเทคนิค CBI','Medium','training, technical_training','Training scenario',NODE_MST, 440,264,110,140, 14),
+      Z('f5-sim','Station Simulator','ห้องจำลองสถานี','Medium-High','simulator, high_occupancy, technical','Simulator incident (Preset)',NODE_MST, 560,264,180,140, 18),
+      Z('f5-area','Training Area','พื้นที่ฝึกอบรมอเนกประสงค์','Medium','training, high_occupancy','Large group evacuation',NODE_MST, 750,264,220,140, 8),
+    ]}
+  ]
+};
+floorPlanData.floors.forEach(f=>f.zones.forEach(z=>z.floor=f.name));
+
+/* ---------- Scenario Presets ---------- */
+const SCENARIOS = [
+  {id:'s1', name:'Store Fire — Ground Floor', floor:'GF', zone:'gf-store', kind:'fire', smoke:['gf-n2'], sev:1.0},
+  {id:'s2', name:'Control Room Adjacent Smoke', floor:'GF', zone:'gf-ctrl', kind:'smoke', smoke:['gf-ctrl','gf-access'], sev:0.9},
+  {id:'s3', name:'DOC Store Fire — 2nd Floor', floor:'F2', zone:'f2-doc', kind:'fire', smoke:['f2-locker'], sev:1.0},
+  {id:'s4', name:'Incident Management Room Evacuation', floor:'F2', zone:'f2-imr', kind:'evac', smoke:[], sev:0.8},
+  {id:'s5', name:'Battery Fire — UPS Battery Room — 3rd Floor', floor:'F3', zone:'f3-ups', kind:'fire', smoke:['f3-n2','f3-sig','f3-corridor'], sev:1.3, powerIsolation:true},
+  {id:'s6', name:'Server Room Fire — ITD Server — 3rd Floor', floor:'F3', zone:'f3-itd', kind:'fire', smoke:['f3-afc'], sev:1.1, powerIsolation:true},
+  {id:'s7', name:'Signalling Room Incident — 3rd Floor', floor:'F3', zone:'f3-sig', kind:'fire', smoke:['f3-ups'], sev:1.1, powerIsolation:true},
+  {id:'s8', name:'Missing Visitor — Visitor Gallery — 3rd Floor', floor:'F3', zone:'f3-visitor', kind:'missing', smoke:[], sev:0.9, missing:2},
+  {id:'s9', name:'Central Files Room Fire — 4th Floor', floor:'F4', zone:'f4-files', kind:'fire', smoke:['f4-exam'], sev:1.0},
+  {id:'s10', name:'Training Room Evacuation — 5th Floor', floor:'F5', zone:'f5-troom', kind:'evac', smoke:[], sev:1.0},
+  {id:'s11', name:'Station Simulator Incident — 5th Floor', floor:'F5', zone:'f5-sim', kind:'fire', smoke:['f5-cbi'], sev:1.1, trapped:1},
+  {id:'s12', name:'Corridor Smoke — 5th Floor', floor:'F5', zone:'f5-corridor', kind:'smoke', smoke:['f5-corridor'], sev:1.2, blockCorridor:true},
+];
+
+/* ---------- State ---------- */
+const RISK_COLOR = {'Critical':'#dc2626','High':'#f97316','Medium-High':'#f59e0b','Medium':'#3b82f6','Low-Medium':'#22c55e'};
+const CAVEAT = 'Prototype schematic only — verify with official floor plan before operational use';
+let currentFloor = 'F3';
+let selectedZone = null;
+let activeScenario = null;
+let lastRun = null;
+
+const $ = s=>document.querySelector(s);
+const fmtT = s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function seededRand(seed){ return ()=> (seed = (seed*9301+49297)%233280)/233280; }
+function floorOf(id){ return floorPlanData.floors.find(f=>f.id===id); }
+function zoneOf(id){ for(const f of floorPlanData.floors){ const z=f.zones.find(z=>z.id===id); if(z) return z; } return null; }
+
+/* ---------- Icons & control suggestions ---------- */
+function zoneIcon(z){
+  const t=z.tags;
+  if(t.includes('stair')) return '🪜';
+  if(t.includes('lift_hall')) return '🛗';
+  if(t.includes('first_aid')) return '⛑️';
+  if(t.includes('visitor')) return '👥';
+  if(t.includes('training')||t.includes('simulator')) return '🎓';
+  if(t.includes('technical')||t.includes('ahu')||t.includes('gas_room')) return '🔧';
+  if(t.includes('corridor')) return '🚶';
+  return '';
+}
+function recommendedControl(z){
+  const t=z.tags;
+  if(t.includes('battery_room')) return 'ตัดไฟและยืนยัน Power Isolated ก่อนใช้น้ำทุกกรณี พิจารณาสารดับเพลิงชนิดไม่นำไฟฟ้า เฝ้าระวังควันพิษจากแบตเตอรี่';
+  if(t.includes('server_room')||t.includes('signalling')||t.includes('afc')||t.includes('control_room')) return 'ใช้ถังดับเพลิงชนิด CO2/Clean Agent ตัดไฟก่อนใช้น้ำ ประสาน EC/DC และป้องกันผลกระทบต่อระบบเดินรถ';
+  if(t.includes('gas_room')) return 'พื้นที่ก๊าซ ห้ามเข้าโดยไม่มีอุปกรณ์ ตรวจสอบการรั่วไหลและระบายอากาศก่อนเข้าพื้นที่';
+  if(t.includes('store')||t.includes('storage')||t.includes('file_storage')||t.includes('document_store')) return 'ควบคุม Fire Load ห้ามวางของกีดขวางทางเดิน ตรวจสอบแหล่งความร้อนใกล้เคียง และตรวจพื้นที่ให้ครบเมื่อกวาดตรวจ (Search & Clear)';
+  if(t.includes('high_occupancy')||t.includes('training')||t.includes('meeting_room')||t.includes('exam_room')) return 'จัดผู้นำอพยพประจำห้อง คุมจังหวะการออกเป็นระเบียบ ลดคอขวดที่ประตูและทางเดิน';
+  if(t.includes('visitor')) return 'ผู้เยี่ยมชมไม่คุ้นเส้นทาง ต้องมีผู้นำทาง (Escort) และผูกรายชื่อกับระบบตรวจนับที่จุดรวมพล';
+  if(t.includes('sleeping_area')||t.includes('rest_area')) return 'พื้นที่พักผ่อน เสี่ยงตอบสนองช้านอกเวลาทำการ ต้องมีการปลุกแจ้งเหตุถึงตัวและผู้ตรวจสอบซ้ำ';
+  if(t.includes('corridor')) return 'เส้นทางอพยพหลัก ห้ามมีสิ่งกีดขวางถาวร เฝ้าระวังคอขวดและควันสะสม';
+  if(t.includes('stair')) return 'แกนอพยพหลัก ควบคุมจังหวะปล่อยคนเข้าบันได ห้ามใช้เก็บของ ตรวจประตูกันควันสม่ำเสมอ';
+  if(t.includes('lift_hall')) return 'ห้ามใช้ลิฟต์ขณะเกิดเหตุ ติดป้ายเตือนและกำหนดการควบคุมลิฟต์โดยฝ่ายอาคาร';
+  if(t.includes('ahu')||t.includes('cooling')) return 'จุดแพร่ควันผ่านระบบปรับอากาศ ต้องมีขั้นตอนหยุด AHU เมื่อเกิดเหตุเพลิงไหม้';
+  if(t.includes('pantry')) return 'แหล่งความร้อน/ประกายไฟ ตรวจอุปกรณ์ไฟฟ้าและกำหนดผู้ปิดระบบเมื่อเลิกใช้งาน';
+  return 'ตรวจสอบเส้นทางอพยพและจุดรวมพลของพื้นที่ ให้พนักงานทราบบทบาทเมื่อเกิดเหตุ';
+}
+
+/* ============================================================
+   Render: Sidebar
+   ============================================================ */
+(function initSidebar(){
+  $('#floor-btns').innerHTML = floorPlanData.floors.map(f=>
+    `<button class="fbtn ${f.id===currentFloor?'on':''}" data-f="${f.id}" onclick="setFloor('${f.id}')">${f.name} <span style="float:right;color:${f.id===currentFloor?'#d7f3ee':'var(--muted)'};font-size:11.5px">${f.zones.reduce((s,z)=>s+z.occ,0)} คน</span></button>`).join('');
+  $('#preset-list').innerHTML = SCENARIOS.map(s=>
+    `<button class="preset-btn" id="pb-${s.id}" onclick="selectScenario('${s.id}')">${s.kind==='fire'?'🔥':s.kind==='smoke'?'💨':s.kind==='missing'?'🔎':'🏃'} ${s.name}<small>${floorOf(s.floor).name}${s.missing?' · ผู้สูญหาย '+s.missing:''}${s.trapped?' · ผู้ติดค้าง '+s.trapped:''}${s.blockCorridor?' · ทางเดินถูกปิด':''}</small></button>`).join('');
+})();
+function setFloor(id){
+  currentFloor = id; selectedZone = null;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('on', b.dataset.f===id));
+  renderPlan(); renderDetail(null);
+}
+
+/* ============================================================
+   Render: Vector Floor Plan (SVG ทั้งหมด ไม่มีภาพประกอบ)
+   ============================================================ */
+function renderPlan(){
+  const f = floorOf(currentFloor);
+  const showRisk = $('#ly-risk').checked, showRoute = $('#ly-route').checked,
+        showScen = $('#ly-scen').checked, showOcc = $('#ly-occ').checked,
+        showRescue = $('#ly-rescue').checked;
+  $('#plan-title').textContent = `${floorPlanData.building} · ${f.name}`;
+  let s = '';
+
+  // building footprint
+  s += `<rect x="14" y="26" width="972" height="412" rx="14" fill="#eef1f6" stroke="#cbd5e1" stroke-width="2"/>`;
+  s += `<text x="26" y="18" fill="#94a3b8" font-size="11">${CAVEAT}</text>`;
+  s += `<text x="974" y="18" fill="#94a3b8" font-size="11" text-anchor="end">N ⬆ · schematic ไม่ตรงสเกลวิศวกรรม</text>`;
+
+  // zones
+  f.zones.forEach(z=>{
+    const col = RISK_COLOR[z.riskLevel] || '#94a3b8';
+    const isCorr = z.tags.includes('corridor');
+    const isStair = z.tags.includes('stair');
+    const fill = showRisk ? col+'22' : '#f8fafc';
+    const stroke = showRisk ? col : '#b6c2d4';
+    const sel = selectedZone===z.id ? 'sel' : '';
+    s += `<g class="zone ${sel}" onclick="clickZone('${z.id}')">
+      <rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="${isStair?2.6:1.6}" ${isStair?'stroke-dasharray="0"':''}/>`;
+    if(isStair){ // บันได: เส้นขั้นบันไดแบบ schematic
+      for(let i=1;i<6;i++) s += `<line x1="${z.x+10}" y1="${z.y+z.h*i/6}" x2="${z.x+z.w-10}" y2="${z.y+z.h*i/6}" stroke="${stroke}" stroke-width="1.4" opacity=".6"/>`;
+    }
+    if(isCorr){
+      s += `<line x1="${z.x+12}" y1="${z.y+z.h/2}" x2="${z.x+z.w-12}" y2="${z.y+z.h/2}" stroke="#cbd5e1" stroke-width="1.6" stroke-dasharray="14 10"/>`;
+    }
+    const icon = zoneIcon(z);
+    const nameShort = z.name.length>26 ? z.name.slice(0,25)+'…' : z.name;
+    const cx = z.x+z.w/2;
+    if(isCorr){
+      s += `<text x="${cx}" y="${z.y+z.h/2-10}" fill="#64748b" font-size="12" font-weight="700" text-anchor="middle">🚶 ${z.name}</text>`;
+    }else{
+      s += `<text x="${cx}" y="${z.y+18}" fill="#334155" font-size="${z.w<80?9.5:11}" font-weight="700" text-anchor="middle">${icon} ${nameShort}</text>`;
+      if(showRisk) s += `<text x="${cx}" y="${z.y+32}" fill="${col}" font-size="9.5" text-anchor="middle">${z.riskLevel}</text>`;
+    }
+    s += `<title>${z.name} · ${z.riskLevel} · ${z.function}</title></g>`;
+  });
+
+  // occupancy dots
+  if(showOcc){
+    const rnd = seededRand(currentFloor.charCodeAt(currentFloor.length-1)*97+11);
+    f.zones.filter(z=>z.occ>0).forEach(z=>{
+      for(let i=0;i<z.occ;i++){
+        const x = z.x+10+rnd()*(z.w-20), y = z.y+40+rnd()*(z.h-52);
+        s += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="3" fill="#3b82f6" opacity=".65"/>`;
+      }
+    });
+  }
+
+  // evacuation route layer → MST-01
+  const mst = f.zones.find(z=>z.tags.includes('stair'));
+  const corr = f.zones.find(z=>z.tags.includes('corridor'));
+  const blocked = activeScenario && activeScenario.blockCorridor && activeScenario.floor===currentFloor;
+  if(showRoute && mst && corr){
+    const cy = corr.y+corr.h/2;
+    const mx = mst.x+mst.w/2;
+    if(blocked){
+      // ครึ่งตะวันออกของทางเดินถูกปิด แสดงเส้น blocked แดงประ
+      s += `<line x1="${mx+40}" y1="${cy}" x2="${corr.x+corr.w-16}" y2="${cy}" stroke="var(--blocked)" stroke-width="5" stroke-dasharray="12 10" opacity=".9"/>`;
+      s += `<text x="${(mx+corr.x+corr.w)/2}" y="${cy-12}" fill="var(--blocked)" font-size="12" font-weight="700" text-anchor="middle">🚫 ทางเดินฝั่งตะวันออกมีควันปกคลุม รอทีมกำกับเส้นทาง</text>`;
+      s += `<path d="M${mx-6} ${cy} L${corr.x+16} ${cy}" stroke="var(--route)" stroke-width="5" fill="none" opacity=".9"/>`;
+    }else{
+      s += `<path d="M${corr.x+corr.w-16} ${cy} L${mx} ${cy}" stroke="var(--route)" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>`;
+      s += `<path d="M${corr.x+16} ${cy} L${mx} ${cy}" stroke="var(--route)" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>`;
+    }
+    // เข้าแกนบันได
+    s += `<path d="M${mx} ${cy} L${mx} ${mst.y+mst.h-14}" stroke="var(--route)" stroke-width="5" fill="none" opacity=".95"/>`;
+    s += `<circle cx="${mx}" cy="${mst.y+mst.h-14}" r="9" fill="var(--route)"/><text x="${mx}" y="${mst.y+mst.h-10}" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">EXIT</text>`;
+    // GF: ต่อไปยังทางออกหลักและจุดรวมพลภายนอก
+    if(currentFloor==='GF'){
+      const lobby = f.zones.find(z=>z.id==='gf-lobby');
+      s += `<path d="M${lobby.x+lobby.w/2} ${cy} L${lobby.x+lobby.w/2} ${lobby.y+lobby.h}" stroke="var(--route)" stroke-width="5" opacity=".85"/>`;
+      s += `<circle cx="${lobby.x+lobby.w/2}" cy="${lobby.y+lobby.h+22}" r="14" fill="none" stroke="var(--route)" stroke-width="3"/>
+            <text x="${lobby.x+lobby.w/2}" y="${lobby.y+lobby.h+27}" fill="var(--route)" font-size="11" font-weight="800" text-anchor="middle">A</text>
+            <text x="${lobby.x+lobby.w/2+22}" y="${lobby.y+lobby.h+26}" fill="var(--route)" font-size="11">จุดรวมพลภายนอก (ตำแหน่งต้องยืนยันจากแผนอพยพ)</text>`;
+    }
+  }
+
+  // scenario overlays
+  if(activeScenario && activeScenario.floor===currentFloor){
+    const sz = zoneOf(activeScenario.zone);
+    // smoke overlay
+    (activeScenario.smoke||[]).forEach(id=>{
+      const z = zoneOf(id); if(!z) return;
+      s += `<rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="6" fill="#64748b" opacity=".38"/>
+            <text x="${z.x+z.w/2}" y="${z.y+z.h-10}" fill="#334155" font-size="10" text-anchor="middle">💨 ควันปกคลุม</text>`;
+    });
+    // fire / incident marker
+    if(showScen && sz){
+      const fx = sz.x+sz.w/2, fy = sz.y+sz.h/2+8;
+      const em = activeScenario.kind==='fire'?'🔥':activeScenario.kind==='smoke'?'💨':activeScenario.kind==='missing'?'🔎':'📣';
+      s += `<circle class="firewave" cx="${fx}" cy="${fy}" r="12" fill="none" stroke="${activeScenario.kind==='fire'?'#dc2626':'#f59e0b'}" stroke-width="3"/>
+            <circle cx="${fx}" cy="${fy}" r="13" fill="#fff" stroke="${activeScenario.kind==='fire'?'#dc2626':'#f59e0b'}" stroke-width="2"/>
+            <text x="${fx}" y="${fy+5}" font-size="14" text-anchor="middle">${em}</text>`;
+    }
+    // rescue task marker
+    if(showRescue && (activeScenario.missing || activeScenario.trapped) && sz){
+      s += `<rect x="${sz.x}" y="${sz.y-24}" width="${Math.max(150,sz.w)}" height="20" rx="5" fill="#fff4ec" stroke="#f97316"/>
+            <text x="${sz.x+8}" y="${sz.y-10}" fill="#c2410c" font-size="11" font-weight="700">🔎 Rescue Task: ${activeScenario.missing?'ผู้สูญหาย '+activeScenario.missing+' คน':'ผู้ติดค้าง '+activeScenario.trapped+' คน'} — ทีมที่ได้รับมอบหมายเท่านั้น</text>`;
+    }
+  }
+  // command post (ภายนอกอาคาร มุมซ้ายล่าง)
+  s += `<text x="30" y="458" fill="#0f766e" font-size="11" font-weight="700">🚩 Command Post / First Aid Area: จุดรวมพลหน้าอาคาร (ตำแหน่งจริงต้องยืนยันจากแผนอพยพ)</text>`;
+
+  $('#plan-svg').innerHTML = s;
+}
+
+/* ============================================================
+   Detail Panel
+   ============================================================ */
+function clickZone(id){
+  selectedZone = id;
+  renderPlan();
+  renderDetail(zoneOf(id));
+}
+function renderDetail(z){
+  const el = $('#detail-body');
+  if(!z){ el.innerHTML = 'คลิกห้องบนแผนผังเพื่อดูรายละเอียด'; return; }
+  const col = RISK_COLOR[z.riskLevel];
+  el.innerHTML = `
+    <dl>
+      <dt>Floor</dt><dd><b>${z.floor}</b></dd>
+      <dt>Room / Zone</dt><dd><b>${zoneIcon(z)} ${z.name}</b></dd>
+      <dt>Function</dt><dd>${z.function}</dd>
+      <dt>Risk Level</dt><dd><span class="risk-chip" style="background:${col}">${z.riskLevel}</span></dd>
+      <dt>Tags</dt><dd class="tagline">${z.tags.split(',').map(t=>`<span class="tag">${t.trim()}</span>`).join('')}</dd>
+      <dt>Suggested Scenario</dt><dd>${z.scenarioUseCase}</dd>
+      <dt>Nearest Evacuation Node</dt><dd>${z.nearestEvacuationNode==='—'?'พื้นที่นี้คือแกนอพยพ':z.nearestEvacuationNode}</dd>
+      <dt>Occupancy (จำลอง)</dt><dd>${z.occ} คน</dd>
+      <dt>Recommended Control</dt><dd>${recommendedControl(z)}</dd>
+      <dt>Caveat</dt><dd style="color:#8a6100;font-size:12px">${CAVEAT}</dd>
+    </dl>`;
+}
+
+/* ============================================================
+   Scenario + Simulation (Mock)
+   ============================================================ */
+function selectScenario(id){
+  activeScenario = SCENARIOS.find(s=>s.id===id);
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.toggle('on', b.id==='pb-'+id));
+  setFloor(activeScenario.floor);
+  selectedZone = activeScenario.zone;
+  renderPlan(); renderDetail(zoneOf(activeScenario.zone));
+  $('#sim-sc-name').textContent = '— '+activeScenario.name;
+  $('#btn-run').disabled = false;
+  $('#btn-aar').disabled = true;
+  $('#aar-panel').style.display = 'none';
+  $('#sim-advisory').style.display = 'none';
+  $('#sim-feed').innerHTML = `<li><span class="t">พร้อม</span><span>สถานการณ์ถูกโหลด กด "รันจำลอง (Mock)" เพื่อเริ่ม</span></li>`;
+  ['st-time','st-btl','st-risk','st-rescue'].forEach(i=>$('#'+i).textContent='—');
+  $('#st-btl-bar').style.width='0%';
+  lastRun = null;
+}
+function clearScenario(){
+  activeScenario = null; lastRun = null;
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('on'));
+  $('#sim-sc-name').textContent = '— ยังไม่ได้เลือกสถานการณ์';
+  $('#btn-run').disabled = true; $('#btn-aar').disabled = true;
+  $('#aar-panel').style.display='none'; $('#sim-advisory').style.display='none';
+  $('#sim-feed').innerHTML = `<li><span class="t">—</span><span>เลือกสถานการณ์จาก Scenario Presets แล้วกดรันจำลอง</span></li>`;
+  ['st-time','st-btl','st-risk','st-rescue'].forEach(i=>$('#'+i).textContent='—');
+  $('#st-btl-bar').style.width='0%';
+  renderPlan();
+}
+
+function computeMock(sc){
+  const f = floorOf(sc.floor);
+  const sz = zoneOf(sc.zone);
+  const floorOcc = f.zones.reduce((s,z)=>s+z.occ,0);
+  const riskOcc = sz.occ + (sc.smoke||[]).reduce((s,id)=>{const z=zoneOf(id);return s+(z?z.occ:0);},0);
+  const evacSec = Math.round((140 + floorOcc*1.15 + (sc.blockCorridor?95:0) + (sc.kind==='fire'?25:0)) * sc.sev);
+  const btl = Math.min(96, Math.round(38 + floorOcc/2.4 + (sc.blockCorridor?26:0)));
+  return {floorOcc, riskOcc, evacSec, btl,
+    rescue: sc.missing ? `เปิด Rescue Task ค้นหาผู้สูญหาย ${sc.missing} คน (Visitor)` :
+            sc.trapped ? `เปิด Rescue Task ผู้ติดค้าง ${sc.trapped} คน รอทีมที่ได้รับมอบหมาย/หน่วยภายนอก` : 'ไม่มี'};
+}
+
+function runSim(){
+  if(!activeScenario) return;
+  const sc = activeScenario, sz = zoneOf(sc.zone), f = floorOf(sc.floor);
+  const m = computeMock(sc);
+  $('#btn-run').disabled = true;
+  const feed = $('#sim-feed'); feed.innerHTML='';
+  const steps = [
+    ['0:00', `ตรวจพบเหตุ${sc.kind==='fire'?'เพลิงไหม้':sc.kind==='smoke'?'ควัน':sc.kind==='missing'?'ผู้สูญหาย':'ซ้อมอพยพ'}ที่ ${sz.name} · ${f.name}`],
+    ['0:20', 'ยืนยันเหตุ แจ้งสายบังคับบัญชา (Building Tech → รปภ./DC → CSSM/IM)'],
+    ['0:45', 'ประกาศอพยพ ' + (sc.blockCorridor ? 'ทางเดินฝั่งตะวันออกถูกปิด ใช้เส้นทางฝั่งตะวันตกสู่ MST-01' : 'ใช้เส้นทางทางเดินกลางสู่ MST-01')],
+    ['1:30', `ผู้อยู่ในชั้นทยอยเข้าแกนบันได MST-01 · Bottleneck Score ${m.btl}/100`],
+    [fmtT(m.evacSec), `อพยพครบ (ประมาณการ) · ${m.rescue!=='ไม่มี' ? m.rescue : 'ตรวจนับครบถ้วน'}`],
+  ];
+  if(sc.powerIsolation) steps.splice(3,0,['1:10','⚡ Interlock: พื้นที่ไฟฟ้า/แบตเตอรี่ ต้องยืนยันตัดไฟ (Power Isolated) ก่อนใช้น้ำดับเพลิง']);
+  let i=0;
+  (function tick(){
+    if(i<steps.length){
+      feed.insertAdjacentHTML('beforeend',`<li><span class="t">${steps[i][0]}</span><span>${steps[i][1]}</span></li>`);
+      feed.scrollTop = feed.scrollHeight;
+      i++; setTimeout(tick, 480);
+    }else{
+      $('#st-time').textContent = fmtT(m.evacSec);
+      $('#st-time').className = 'v' + (m.evacSec>300?' warn':'');
+      $('#st-btl').textContent = m.btl+'/100';
+      $('#st-btl-bar').style.width = m.btl+'%';
+      $('#st-btl-bar').style.background = m.btl>70?'var(--crit)':m.btl>50?'var(--high)':'var(--lmed)';
+      $('#st-risk').textContent = m.riskOcc+' คน';
+      $('#st-rescue').textContent = m.rescue;
+      const adv = [];
+      adv.push(`จุดเกิดเหตุ ${sz.name} (${sz.riskLevel}) — ${recommendedControl(sz)}`);
+      if(sc.blockCorridor) adv.push('เส้นทางหลักฝั่งตะวันออกใช้ไม่ได้ ให้ Floor Warden กำกับการไหลของคนฝั่งตะวันตก และรายงานผู้ตกค้างต่อ IM');
+      if(sc.powerIsolation) adv.push('ห้ามใช้น้ำดับเพลิงจนกว่า EC/DC ยืนยัน Power Isolated');
+      if(sc.missing) adv.push('Missing Person: ตรวจ Visitor Log เทียบยอดที่จุดรวมพล และให้ทีมที่ได้รับมอบหมายค้นหาเท่านั้น');
+      if(sc.trapped) adv.push('Trapped Person: ประสาน External Fire Service หากเส้นทางลงไม่ปลอดภัย ห้ามพนักงานทั่วไปเข้าช่วยเอง');
+      if(m.evacSec>300) adv.push(`เวลาประมาณการ ${fmtT(m.evacSec)} เกินเกณฑ์ 5:00 นาที ควรซ้อมเพิ่มและลดเวลาตอบสนองช่วงต้น`);
+      adv.push('คำแนะนำนี้เป็น Decision Support เท่านั้น การสั่งการจริงเป็นอำนาจของผู้บัญชาการเหตุการณ์');
+      $('#sim-advisory').innerHTML = '<b>🤖 AI Advisory (Decision Support)</b><ul>'+adv.map(a=>`<li>${a}</li>`).join('')+'</ul>';
+      $('#sim-advisory').style.display = 'block';
+      $('#btn-run').disabled = false;
+      $('#btn-aar').disabled = false;
+      lastRun = {sc, m, when:new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})};
+    }
+  })();
+}
+
+/* ============================================================
+   AI AAR Summary (Mock)
+   ============================================================ */
+function genAAR(){
+  if(!lastRun) return;
+  const {sc, m, when} = lastRun;
+  const sz = zoneOf(sc.zone), f = floorOf(sc.floor);
+  $('#aar-body').innerHTML = `
+    <div class="note" style="margin-top:0">สร้างเมื่อ ${when} · แหล่งข้อมูล: ผลจำลอง Mock จาก Vector Digital Twin</div>
+    <h4>1. Scenario Summary</h4>
+    <ul><li>${sc.name} — ${sc.kind==='fire'?'เหตุเพลิงไหม้':sc.kind==='smoke'?'เหตุควันปกคลุม':sc.kind==='missing'?'เหตุผู้สูญหาย':'การซ้อมอพยพ'} ที่ ${sz.name}, ${f.name}</li></ul>
+    <h4>2. Affected Floor / Zone</h4>
+    <ul><li>${f.name} · จุดเกิดเหตุ: ${sz.name}${(sc.smoke&&sc.smoke.length)?` · พื้นที่ควันปกคลุม: ${sc.smoke.map(id=>zoneOf(id).name).join(', ')}`:''}</li></ul>
+    <h4>3. Risk Level</h4>
+    <ul><li>${sz.riskLevel} — ${sz.function} · Tags: ${sz.tags}</li></ul>
+    <h4>4. Evacuation Route Used</h4>
+    <ul><li>${sc.blockCorridor?'ทางเดินฝั่งตะวันออกถูกปิดจากควัน ใช้เส้นทางฝั่งตะวันตกสู่ MST-01 เพียงเส้นทางเดียว':'ทางเดินกลางของชั้นสู่แกนบันได MST-01'} · เวลาอพยพประมาณการ ${fmtT(m.evacSec)} (${m.evacSec<=300?'ผ่านเกณฑ์ 5:00':'เกินเกณฑ์ 5:00'})</li></ul>
+    <h4>5. Bottleneck</h4>
+    <ul><li>Bottleneck Score ${m.btl}/100 ที่หน้าแกนบันได MST-01 · People at Risk ${m.riskOcc} คน จากผู้อยู่ในชั้น ${m.floorOcc} คน</li></ul>
+    <h4>6. Trapped / Missing Persons</h4>
+    <ul><li>${sc.missing?`ผู้สูญหาย ${sc.missing} คน (Visitor Gallery) — สถานะจำลอง: FOUND โดยทีมค้นหาที่ได้รับมอบหมาย`:sc.trapped?`ผู้ติดค้าง ${sc.trapped} คน — สถานะจำลอง: RESCUED โดยทีมที่ได้รับมอบหมาย/หน่วยภายนอก`:'ไม่มี'}</li></ul>
+    <h4>7. Rescue Task</h4>
+    <ul><li>${m.rescue}</li></ul>
+    <h4>8. Corrective Actions</h4>
+    <ul>
+      <li>ทบทวนการควบคุมคอขวดหน้า MST-01 (Flow Controller) โดยเฉพาะชั้นที่มี occupancy สูง</li>
+      ${sc.powerIsolation?'<li>กำหนดเวลามาตรฐานการยืนยันตัดไฟ (Power Isolated) และซ้อมร่วม EC/DC เป็นประจำ</li>':''}
+      ${sc.blockCorridor?'<li>จัดทำแผนเส้นทางสำรองเมื่อทางเดินหลักถูกปิด และติดป้ายนำทางเรืองแสงเพิ่ม</li>':''}
+      ${sc.missing?'<li>ผูกระบบลงทะเบียนผู้เยี่ยมชมกับ Muster List เพื่อลดเวลาปิดยอดตรวจนับ</li>':''}
+      <li>ตรวจสอบ Fire Load ในห้องเก็บของ/เอกสารตามรอบ และห้ามวางของกีดขวางเส้นทางอพยพ</li>
+      <li>นำผลเข้าวาระ คปอ. และใช้กำหนดสถานการณ์ซ้อมจริงครั้งถัดไป</li>
+    </ul>
+    <h4>9. Verification Required</h4>
+    <ul>
+      <li>ยืนยันผังห้อง เส้นทางอพยพ ตำแหน่งบันได และจุดรวมพลกับ Fire Protection Plan / Evacuation Plan ฉบับทางการ</li>
+      <li>ยืนยันตำแหน่งอุปกรณ์ดับเพลิงทั้งหมดจากแบบระบบป้องกันอัคคีภัย (ไม่อยู่ในขอบเขตข้อมูลชุดนี้)</li>
+      <li>Site Inspection พื้นที่จริงก่อนนำไปใช้ปฏิบัติการหรือเอกสารทางการ</li>
+    </ul>`;
+  $('#aar-panel').style.display = 'block';
+  $('#aar-panel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------- init ---------- */
+renderPlan();
+</script>
+</body>
+</html>

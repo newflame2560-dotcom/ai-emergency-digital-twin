@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Claude Update Brief - OCC Fire Drill 2568</title>
+<style>
+body{font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#14212b;line-height:1.65;margin:0}
+.page{max-width:1100px;margin:auto;padding:32px}
+.hero{background:linear-gradient(135deg,#0f766e,#0b4f4a);color:white;border-radius:28px;padding:36px}
+.section{background:white;border:1px solid #d9e2ec;border-radius:20px;padding:24px;margin-top:24px}
+h1{font-size:42px;margin:0}
+h2{margin-top:0;color:#0f766e}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border-bottom:1px solid #d9e2ec;padding:12px;text-align:left;vertical-align:top}
+th{background:#eef7f5}
+pre{background:#0f172a;color:#e5e7eb;padding:18px;border-radius:16px;white-space:pre-wrap}
+.note{background:#fff7ed;border-left:5px solid #f59e0b;padding:14px;border-radius:12px}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<section class="hero">
+<h1>OCC Fire Drill Plan 2568 → AI Emergency Digital Twin Prototype v1.2</h1>
+<p>Brief สำหรับส่งให้ Claude ศึกษาแผนฝึกซ้อมดับเพลิงและอพยพหนีไฟเดิม แล้วอัปเดต Prototype ให้มี Scenario Preset, Drill Timeline, Role Matrix, Command Post, External Coordination, Power Isolation, Recovery Checklist และ AI AAR Report</p>
+</section>
+
+<section class="section">
+<h2>1. เป้าหมายการอัปเดต</h2>
+<ul>
+<li>คง Prototype เดิมไว้ทั้งหมด</li>
+<li>เพิ่มข้อมูลจากแผนฝึกซ้อม OCC 2568 เป็น Scenario Pack</li>
+<li>เพิ่ม Drill Plan Timeline จากลำดับเหตุการณ์จริง</li>
+<li>เพิ่ม Role & Responsibility Matrix ตามบทบาทในแผน</li>
+<li>เพิ่ม Command Post, External Agency, Power Isolation และ Recovery Checklist</li>
+<li>เพิ่ม AI AAR Report ให้สรุปความสอดคล้องกับแผนเดิม</li>
+</ul>
+</section>
+
+<section class="section">
+<h2>2. สรุปข้อมูลจากแผนเดิม</h2>
+<table>
+<tr><th>หัวข้อ</th><th>รายละเอียด</th></tr>
+<tr><td>แผน</td><td>แผนการฝึกซ้อมดับเพลิงและฝึกซ้อมอพยพหนีไฟ ประจำปี 2568</td></tr>
+<tr><td>พื้นที่</td><td>อาคารศูนย์บริหารและควบคุมการเดินรถ OCC</td></tr>
+<tr><td>ลักษณะเหตุ</td><td>เพลิงไหม้ระดับปานกลาง</td></tr>
+<tr><td>จุดเกิดเหตุ</td><td>ห้องเก็บของ ชั้น 3 ห้อง 3-19</td></tr>
+<tr><td>Trigger</td><td>Smoke Detector Active / FCP แจ้งเตือน</td></tr>
+<tr><td>เวลาเริ่มเหตุจำลอง</td><td>13:10 น.</td></tr>
+<tr><td>การยกระดับเหตุ</td><td>ใช้ถังดับเพลิง 2 ถังแล้วควบคุมไม่ได้ → General Alarm → ขอหน่วยงานภายนอก</td></tr>
+<tr><td>Command Post</td><td>จุดรวมพลหน้าอาคาร OCC</td></tr>
+<tr><td>Recovery</td><td>ตรวจสอบพื้นที่ คืนไฟ Reset FCP ปิดพื้นที่เกิดเหตุ และรายงานอุบัติการณ์</td></tr>
+</table>
+
+<div class="note">
+<strong>หมายเหตุ:</strong> เอกสารเดิมมีจุดที่ชื่อโครงการ/สายทางอาจไม่สอดคล้องกัน เช่น สายสีเหลือง สายสีชมพู และสายนัคราพิพัฒน์ ควรให้ Claude ใส่หมายเหตุว่า “ตรวจสอบชื่อพื้นที่ก่อนใช้ในเอกสารทางการ”
+</div>
+</section>
+
+<section class="section">
+<h2>3. Drill Timeline ที่ต้องเพิ่ม</h2>
+<table>
+<tr><th>เวลา</th><th>เหตุการณ์</th><th>สถานะในระบบ</th></tr>
+<tr><td>00</td><td>Smoke Detector Active ที่ห้องเก็บของ ชั้น 3 ห้อง 3-19</td><td>Alarm Triggered</td></tr>
+<tr><td>01</td><td>Building Technician รับ FCP แจ้ง รปภ. และ DC</td><td>Under Verification</td></tr>
+<tr><td>01-02</td><td>รปภ. พร้อม Master Key และถังดับเพลิงเข้าตรวจสอบ</td><td>Verification Team Dispatched</td></tr>
+<tr><td>02-03</td><td>ยืนยันเกิดเพลิงไหม้จริง ดับเพลิงขั้นต้น ใช้ถัง 2 ถังไม่สำเร็จ</td><td>Initial Firefighting Failed</td></tr>
+<tr><td>03</td><td>General Alarm ขอหน่วยงานภายนอก เริ่มอพยพทั้งอาคาร</td><td>Escalation / Evacuation Started</td></tr>
+<tr><td>03-05</td><td>ตั้ง Command Post และ First Aid Area</td><td>Command Post Active</td></tr>
+<tr><td>06-13</td><td>Floor Warden → Muster Warden → Chief Muster → AIM → IM</td><td>Muster & Headcount</td></tr>
+<tr><td>12-13</td><td>เพลิงลุกลาม ต้องตัดไฟก่อนใช้น้ำดับเพลิง</td><td>Power Isolation Required</td></tr>
+<tr><td>13-27</td><td>หน่วยดับเพลิงภายนอกมาถึง รับข้อมูลจาก IM</td><td>External Agency Arrived</td></tr>
+<tr><td>27-33</td><td>EMT/Safety/ตำรวจ ตรวจสอบพื้นที่ คืนไฟ Reset FCP</td><td>Recovery Inspection</td></tr>
+<tr><td>33-40</td><td>ประกาศกลับสู่สภาวะปกติ</td><td>Return to Normal</td></tr>
+<tr><td>41</td><td>Building Technician เขียนรายงานอุบัติการณ์</td><td>Incident Report Created</td></tr>
+</table>
+</section>
+
+<section class="section">
+<h2>4. Role & Responsibility Matrix</h2>
+<table>
+<tr><th>Role</th><th>หน้าที่ตามแผนเดิม</th><th>แสดงใน Prototype เป็น</th></tr>
+<tr><td>Building Technician</td><td>รับ FCP, แจ้ง รปภ./DC, ให้ข้อมูลจุดเกิดเหตุ</td><td>Alarm Receiver / AIM Support</td></tr>
+<tr><td>หัวหน้า รปภ.</td><td>สั่งตรวจสอบพื้นที่ สนับสนุนดับเพลิง รับหน่วยงานภายนอก</td><td>Security Lead</td></tr>
+<tr><td>รปภ.</td><td>ตรวจสอบพื้นที่ นำถังดับเพลิง ปิดกั้นพื้นที่ นำทางหน่วยงานภายนอก</td><td>Response Team / Perimeter Control</td></tr>
+<tr><td>DC</td><td>ประสาน CSSM รายงานสถานการณ์ ประสานตัดไฟ/คืนไฟ</td><td>Operation Communication</td></tr>
+<tr><td>CSSM</td><td>สั่ง IC แจ้งหน่วยงาน ประสาน CCR/BCC สั่ง EC</td><td>Operation Command Support</td></tr>
+<tr><td>SRSM / IM</td><td>ผู้จัดการเหตุการณ์ ตั้ง Command Post สั่งการหลัก</td><td>Incident Manager</td></tr>
+<tr><td>Building Tech / AIM</td><td>ผู้ช่วย IM ให้ข้อมูลพื้นที่และสถานการณ์</td><td>Assistant Incident Manager</td></tr>
+<tr><td>IC</td><td>แจ้งหน่วยงานภายนอก/ภายใน/ผู้บริหาร</td><td>Communication Controller</td></tr>
+<tr><td>EC</td><td>ประสานตัดไฟและคืนไฟ</td><td>Engineering Control</td></tr>
+<tr><td>Floor / Muster / Chief Warden</td><td>นำอพยพ ตรวจนับคน ตรวจ Log Book</td><td>Evacuation & Headcount Team</td></tr>
+<tr><td>Nurse / EMT / SRCS / Safety</td><td>ปฐมพยาบาล ตรวจสอบพื้นที่หลังเหตุ</td><td>First Aid / Recovery Inspection</td></tr>
+<tr><td>External Fire Service / Police</td><td>ระงับเหตุ ตรวจสอบพื้นที่ เก็บข้อมูลหลักฐาน</td><td>External Agency Support</td></tr>
+</table>
+</section>
+
+<section class="section">
+<h2>5. Scenario Presets ที่ต้องเพิ่ม</h2>
+<table>
+<tr><th>Preset</th><th>ชื่อ</th><th>เงื่อนไข</th><th>เป้าหมาย Demo</th></tr>
+<tr><td>G</td><td>OCC Fire Drill 2568 — Storage Room Fire</td><td>ห้องเก็บของ ชั้น 3 ห้อง 3-19, Smoke Detector, ใช้ถัง 2 ถังไม่สำเร็จ, General Alarm</td><td>แผนเดิมครบวงจร</td></tr>
+<tr><td>H</td><td>OCC Fire Drill + Casualty</td><td>แผนเดิม + ผู้บาดเจ็บสำลักควัน 1 คน</td><td>First Aid + EMS Handoff</td></tr>
+<tr><td>I</td><td>OCC Fire Drill + Missing Visitors</td><td>แผนเดิม + ผู้มาติดต่อ 2 คนยังตรวจนับไม่ครบ</td><td>Missing Person + Rescue Task</td></tr>
+<tr><td>J</td><td>OCC Fire Drill + Fire Spread & Water Use</td><td>เพลิงลุกลาม ควันหนาแน่น ต้องตัดไฟก่อนใช้น้ำ</td><td>Power Isolation Logic</td></tr>
+</table>
+</section>
+
+<section class="section">
+<h2>6. Master Prompt สำหรับส่งให้ Claude</h2>
+<pre>
+ศึกษาเอกสารแผนการฝึกซ้อมดับเพลิงและฝึกซ้อมอพยพหนีไฟ ประจำปี 2568 พื้นที่ OCC ที่แนบไว้ และนำข้อมูลจากแผนเดิมไปอัปเกรด Prototype AI Emergency Digital Twin
+
+ไฟล์ Prototype ปัจจุบัน:
+AI Emergency Digital Twin/ai-emergency-digital-twin-prototype.html
+
+เป้าหมาย:
+อัปเดต Prototype จาก v1.1 เป็น v1.2 โดยคงระบบเดิมทั้งหมดไว้ และเพิ่มข้อมูลจากแผนเดิมเป็น:
+1. Scenario Preset
+2. Drill Plan Timeline
+3. Role & Responsibility Matrix
+4. Command Post Status
+5. External Agency Coordination
+6. Power Isolation & Water Use Logic
+7. Recovery & Return-to-Normal Checklist
+8. AI AAR Report Enhancement
+
+เพิ่ม Scenario Preset ใหม่:
+G: OCC Fire Drill 2568 — Storage Room Fire
+H: OCC Fire Drill + Casualty
+I: OCC Fire Drill + Missing Visitors
+J: OCC Fire Drill + Fire Spread & Water Use
+
+เพิ่ม Simulation Logic:
+- Smoke Detector Active → Alarm Event
+- Building Tech รับ FCP → Under Verification
+- รปภ. ยืนยันไฟจริง → Confirmed Fire
+- ใช้ถัง 2 ถังแล้วควบคุมไม่ได้ → Trigger General Alarm
+- General Alarm → Evacuation ทั้งอาคาร
+- ผู้บาดเจ็บ → First Aid Area + EMS Handoff
+- ผู้ติดค้าง/สูญหาย → Rescue Task + แจ้ง IM
+- เพลิงลุกลามและต้องใช้น้ำ → ต้องยืนยัน Power Isolated ก่อน
+- External Fire Service มาถึง → IM แสดงข้อมูลพื้นที่ แผนอาคาร และสถานะการอพยพ
+- หลังควบคุมเพลิง → EMT/Safety/Police ตรวจพื้นที่ ก่อนคืนไฟและ Reset FCP
+
+เพิ่ม Panel ใหม่:
+- Drill Plan Timeline
+- Role & Responsibility Matrix
+- Command Post Status
+- External Agency Coordination
+- Power Isolation Checklist
+- Recovery & Return-to-Normal Checklist
+
+เพิ่ม AI AAR Report:
+- ความสอดคล้องกับแผนเดิม
+- จุดที่ดำเนินการได้ตามเวลา / จุดล่าช้า
+- ผู้บาดเจ็บ / ผู้ติดค้าง / ผู้สูญหาย
+- การสื่อสารกับหน่วยงานภายนอก
+- การตัดไฟและใช้น้ำดับเพลิง
+- Recovery และ Corrective Action ตามบทบาท
+
+Safety Guardrails:
+- AI เป็น Decision Support เท่านั้น
+- ห้ามแนะนำให้พนักงานทั่วไปกลับเข้าไปในพื้นที่อันตราย
+- Rescue ต้องทำโดยทีมที่ได้รับมอบหมายหรือหน่วยงานฉุกเฉินภายนอก
+- การใช้น้ำดับเพลิงต้องเกิดหลังยืนยันตัดไฟแล้ว
+- ก่อนกลับเข้าอาคารต้องตรวจสอบความปลอดภัยและ IM ยกเลิกสถานการณ์
+
+เงื่อนไข UI/UX:
+- คงสไตล์เดิม ใช้ภาษาไทยเป็นหลัก
+- ใช้ badge สี Completed / Delayed / Pending / Critical
+- ทุก Preset กดรันได้ทันที
+- ใช้ seeded random ให้ผลเดโมคงที่
+- ห้ามลบ Scenario A/B/C เดิม และห้ามลบ casualty/fuel/trapped logic ที่เพิ่มไว้แล้ว
+</pre>
+</section>
+
+<section class="section">
+<h2>7. QA Prompt หลัง Claude แก้ไฟล์</h2>
+<pre>
+ตรวจสอบ Prototype v1.2 หลังเพิ่ม OCC Fire Drill 2568 Scenario Pack
+
+กรุณาทำ QA/UAT:
+1. ตรวจว่า Scenario G/H/I/J แสดงใน Scenario Builder ครบ
+2. กดรัน Scenario G และตรวจ Timeline: Alarm → Verification → Initial Fire Fighting → General Alarm → Evacuation → Muster → External Agency → Recovery
+3. ตรวจ Scenario H ว่ามีผู้บาดเจ็บ, First Aid Area และ EMS Handoff
+4. ตรวจ Scenario I ว่ามี Missing Visitors, Rescue Task และแจ้ง IM
+5. ตรวจ Scenario J ว่าบังคับตัดไฟก่อนใช้น้ำดับเพลิง
+6. ตรวจ Role Matrix ว่าครบตามแผนเดิม
+7. ตรวจ Command Post Status ว่ามี IM, AIM, First Aid Area, Perimeter Control และจุดรับหน่วยงานภายนอก
+8. ตรวจ External Agency Coordination
+9. ตรวจ Recovery Checklist: ตรวจพื้นที่, คืนไฟ, Reset FCP, ปิดพื้นที่, รายงานอุบัติการณ์
+10. ตรวจ AAR Report ว่ามี Plan Compliance, Delay, Casualty/Missing, External Agency, Power Isolation และ CAR ตามบทบาท
+11. ตรวจ Safety Guardrails ว่าไม่มีคำแนะนำให้พนักงานทั่วไปกลับเข้าไปในพื้นที่อันตราย
+12. ตรวจว่า Scenario A/B/C เดิมยังอยู่และรันได้
+
+ผลลัพธ์ที่ต้องการ:
+- Pass / Needs Fix
+- ปัญหา High / Medium / Low
+- จุดที่ควรแก้ก่อนนำเสนอ
+- Final Demo Script สำหรับ Scenario G/H/I/J
+</pre>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/ai-emergency-digital-twin-prototype.html" }
+  ]
+}

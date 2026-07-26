@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Project Brief: AI Fire Emergency Digital Twin</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #16202a;
+      --muted: #667085;
+      --line: #d9e2ec;
+      --primary: #0f766e;
+      --primary-dark: #0b4f4a;
+      --primary-soft: #dff6f2;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --orange: #f59e0b;
+      --orange-soft: #fff7ed;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --green-soft: #dcfce7;
+      --gray-soft: #f1f5f9;
+      --shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans Thai", "Tahoma", "Arial", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 28%),
+        linear-gradient(180deg, #eef7f5 0%, var(--bg) 38%, #ffffff 100%);
+      line-height: 1.65;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 36px 22px 72px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+      background:
+        radial-gradient(circle at top right, rgba(255,255,255,0.22), transparent 32%),
+        linear-gradient(135deg, #0f766e 0%, #0b4f4a 100%);
+      border-radius: 30px;
+      padding: 44px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -90px;
+      bottom: -110px;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      border: 42px solid rgba(255,255,255,0.08);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.24);
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 980px;
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1.12;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      max-width: 900px;
+      margin: 18px 0 0;
+      color: rgba(255,255,255,0.87);
+      font-size: 18px;
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .hero-stat {
+      min-height: 112px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.20);
+    }
+
+    .hero-stat strong {
+      display: block;
+      font-size: 27px;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+
+    .hero-stat span {
+      display: block;
+      color: rgba(255,255,255,0.82);
+      font-size: 14px;
+    }
+
+    .section {
+      margin-top: 28px;
+      padding: 28px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 19px;
+      line-height: 1.35;
+    }
+
+    p { margin: 0; }
+
+    .section-note {
+      margin-top: 6px;
+      color: var(--muted);
+    }
+
+    .pill {
+      display: inline-block;
+      white-space: nowrap;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fbfdff;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+    }
+
+    ul {
+      padding-left: 20px;
+      margin: 10px 0 0;
+    }
+
+    li { margin: 6px 0; }
+
+    .concept {
+      border-left: 5px solid var(--primary);
+      background: #f0fdfa;
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-top: 14px;
+    }
+
+    .concept strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .timeline {
+      position: relative;
+      margin-top: 8px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 22px;
+      width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(var(--primary), var(--blue), var(--orange), var(--red));
+    }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .phase:last-child { margin-bottom: 0; }
+
+    .phase-num {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      color: #ffffff;
+      font-weight: 900;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 8px 22px rgba(15, 118, 110, 0.28);
+    }
+
+    .phase-card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #ffffff;
+    }
+
+    .phase-meta {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tag.green { background: var(--green-soft); color: #166534; }
+    .tag.blue { background: var(--blue-soft); color: #1d4ed8; }
+    .tag.orange { background: var(--orange-soft); color: #c2410c; }
+    .tag.red { background: var(--red-soft); color: #b91c1c; }
+    .tag.gray { background: var(--gray-soft); color: #475569; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      overflow: hidden;
+      border-radius: 16px;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--primary-dark);
+      background: #eef7f5;
+      font-weight: 900;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .prompt-box {
+      margin-top: 16px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      background: #0f172a;
+    }
+
+    .prompt-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      color: #e2e8f0;
+      background: #111827;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-weight: 800;
+    }
+
+    .prompt-title span {
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    pre {
+      margin: 0;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #e5e7eb;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13.5px;
+      line-height: 1.7;
+    }
+
+    .footer {
+      margin-top: 28px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .print-note {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .hero { padding: 30px 24px; }
+      .hero-grid,
+      .grid-2,
+      .grid-3,
+      .grid-4 {
+        grid-template-columns: 1fr;
+      }
+      .section-header { flex-direction: column; }
+      .section { padding: 22px; }
+    }
+
+    @media print {
+      body { background: #ffffff; }
+      .page { max-width: none; padding: 0; }
+      .hero, .section { box-shadow: none; break-inside: avoid; }
+      .section { margin-top: 16px; }
+      pre { font-size: 11px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="badge">🔥 Claude Project Brief</div>
+      <h1>AI Fire Emergency Digital Twin</h1>
+      <p class="subtitle">
+        เอกสารสรุปสำหรับส่งให้ Claude เพื่อเริ่มสร้าง Prototype ระบบจำลองพื้นที่อาคารจริง
+        สำหรับแผนฉุกเฉินกรณีเพลิงไหม้ โดยใช้แนวคิด Google Maps + Floor Plan/BIM + Safety Layer + AI Simulation
+      </p>
+
+      <div class="hero-grid">
+        <div class="hero-stat">
+          <strong>Web App</strong>
+          <span>ต้นแบบระบบใช้งานจริง</span>
+        </div>
+        <div class="hero-stat">
+          <strong>90 วัน</strong>
+          <span>กรอบพัฒนา MVP</span>
+        </div>
+        <div class="hero-stat">
+          <strong>7 หน้า</strong>
+          <span>หน้าจอหลักใน Prototype</span>
+        </div>
+        <div class="hero-stat">
+          <strong>AI Support</strong>
+          <span>ช่วยวิเคราะห์ ไม่ใช่ตัดสินใจแทน</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>1. Project Summary</h2>
+          <p class="section-note">ภาพรวมที่ Claude ต้องเข้าใจก่อนเริ่มสร้างโปรเจกต์</p>
+        </div>
+        <span class="pill">Project Context</span>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>เป้าหมายระบบ</h3>
+          <p>
+            สร้าง Web Application สำหรับจำลองพื้นที่อาคารจริง เพื่อใช้วางแผน ฝึกซ้อม วิเคราะห์
+            และปรับปรุงแผนฉุกเฉินกรณีเพลิงไหม้
+          </p>
+        </div>
+        <div class="card">
+          <h3>ผู้ใช้งานหลัก</h3>
+          <p>
+            จป.วิชาชีพ, Fire Warden, Area Warden, Incident Commander, Facility, Maintenance,
+            Security และผู้บริหาร
+          </p>
+        </div>
+        <div class="card">
+          <h3>ผลลัพธ์ที่ต้องการ</h3>
+          <p>
+            Prototype ที่คลิกดูได้ มีข้อมูลจำลองสมจริง เห็นภาพ Dashboard, Scenario, Evacuation
+            และ AI After Action Review
+          </p>
+        </div>
+      </div>
+
+      <div class="concept">
+        <strong>หลักการออกแบบระบบ</strong>
+        Google Maps ใช้เป็นฐานข้อมูลพื้นที่ภายนอกอาคาร ส่วนข้อมูลภายในอาคารต้องใช้ Floor Plan, CAD หรือ BIM ขององค์กรเอง แล้วนำมาซ้อนเป็น Safety Layer เพื่อให้ AI วิเคราะห์และจำลองเหตุการณ์ได้แม่นยำขึ้น
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>2. System Concept</h2>
+          <p class="section-note">โครงสร้างแนวคิดของ Digital Twin สำหรับงานเพลิงไหม้</p>
+        </div>
+        <span class="pill">Digital Twin Layers</span>
+      </div>
+
+      <div class="grid-4">
+        <div class="card">
+          <h3>Google Maps Layer</h3>
+          <p>พื้นที่ภายนอก อาคาร ถนน ทางเข้าออก จุดจอดรถดับเพลิง และจุดรวมพล</p>
+        </div>
+        <div class="card">
+          <h3>Building Layer</h3>
+          <p>Floor Plan, ห้อง, โซน, ทางเดิน, ประตู, บันได และทางหนีไฟ</p>
+        </div>
+        <div class="card">
+          <h3>Safety Layer</h3>
+          <p>ถังดับเพลิง, Alarm, Detector, Emergency Light, Risk Zone และ Emergency Team</p>
+        </div>
+        <div class="card">
+          <h3>AI Simulation Layer</h3>
+          <p>สร้าง Scenario, วิเคราะห์เส้นทางอพยพ, จุดคอขวด และสรุป AAR</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>3. MVP Scope</h2>
+          <p class="section-note">ขอบเขต Prototype รอบแรก ไม่ต้องเชื่อม API จริง แต่ต้องดูเหมือนระบบใช้งานจริง</p>
+        </div>
+        <span class="pill">MVP Requirement</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>หน้าจอ</th>
+            <th>เป้าหมาย</th>
+            <th>องค์ประกอบที่ควรมี</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Overview Dashboard</td>
+            <td>ดูภาพรวมความพร้อมของอาคารและแผนฉุกเฉิน</td>
+            <td>KPI Cards, Risk Summary, Drill Status, Open Corrective Actions</td>
+          </tr>
+          <tr>
+            <td>Building Map</td>
+            <td>แสดงพื้นที่จริงรอบอาคาร</td>
+            <td>Placeholder Map, ทางเข้าออก, จุดรวมพล, ถนน, จุดเข้าถึงรถฉุกเฉิน</td>
+          </tr>
+          <tr>
+            <td>Floor Plan & Safety Layer</td>
+            <td>ดูข้อมูลภายในอาคารและอุปกรณ์ฉุกเฉิน</td>
+            <td>ชั้นอาคาร, ห้อง, ทางหนีไฟ, อุปกรณ์ฉุกเฉิน, Risk Zone</td>
+          </tr>
+          <tr>
+            <td>Fire Scenario Builder</td>
+            <td>สร้างเหตุจำลองเพลิงไหม้</td>
+            <td>เลือกจุดเกิดเหตุ, ระดับเหตุ, จำนวนคน, ทางออกที่ใช้ไม่ได้, ผู้บาดเจ็บ</td>
+          </tr>
+          <tr>
+            <td>Evacuation Simulation</td>
+            <td>แนะนำทางอพยพและประเมินผลกระทบ</td>
+            <td>เส้นทางหลัก/สำรอง, จุดคอขวด, เวลาคาดการณ์, พื้นที่เสี่ยง</td>
+          </tr>
+          <tr>
+            <td>Drill Dashboard</td>
+            <td>บันทึกและติดตามผลการซ้อม</td>
+            <td>Timer, จำนวนคนครบ/ไม่ครบ, สถานะทีม, Timeline เหตุการณ์</td>
+          </tr>
+          <tr>
+            <td>AI After Action Review</td>
+            <td>สรุปบทเรียนหลังซ้อม</td>
+            <td>ข้อค้นพบ, สาเหตุ, Corrective Action, Owner, Due Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>4. Roadmap แนะนำ</h2>
+          <p class="section-note">ลำดับการพัฒนาแบบ 90 วัน สำหรับสร้าง MVP ที่ทดลองใช้งานและนำเสนอได้</p>
+        </div>
+        <span class="pill">90-Day Roadmap</span>
+      </div>
+
+      <div class="timeline">
+        <div class="phase">
+          <div class="phase-num">0</div>
+          <div class="phase-card">
+            <h3>Phase 0: Project Setup & Scope</h3>
+            <div class="phase-meta">สัปดาห์ที่ 1</div>
+            <ul>
+              <li>กำหนดอาคารนำร่อง 1 อาคาร</li>
+              <li>กำหนดผู้ใช้งานหลักและขอบเขตการใช้งาน</li>
+              <li>รวบรวมพิกัดอาคาร Floor Plan จุดรวมพล และข้อมูลทีมฉุกเฉิน</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-num">1</div>
+          <div class="phase-card">
+            <h3>Phase 1: Real Map & Building Base Model</h3>
+            <div class="phase-meta">สัปดาห์ที่ 2-3</div>
+            <ul>
+              <li>สร้าง Building Map ด้วยข้อมูลจำลองแทน Google Maps API จริง</li>
+              <li>แสดงจุดเข้าออก ถนน จุดรวมพล และพื้นที่รอบอาคาร</li>
+              <li>ซ้อน Floor Plan และแบ่งชั้นอาคาร</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-num">2</div>
+          <div class="phase-card">
+            <h3>Phase 2: Safety Layer & Emergency Asset Mapping</h3>
+            <div class="phase-meta">สัปดาห์ที่ 4-5</div>
+            <ul>
+              <li>ปักจุดอุปกรณ์ฉุกเฉิน เช่น ถังดับเพลิง Hose Reel Alarm Detector</li>
+              <li>กำหนด Fire Risk Zone ระดับสูง กลาง ต่ำ</li>
+              <li>เพิ่มผู้รับผิดชอบแต่ละโซนและความจุคนต่อพื้นที่</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-num">3</div>
+          <div class="phase-card">
+            <h3>Phase 3: AI Scenario & Evacuation Simulation</h3>
+            <div class="phase-meta">สัปดาห์ที่ 6-8</div>
+            <ul>
+              <li>จำลอง AI Scenario ด้วยข้อมูลตัวอย่าง</li>
+              <li>แนะนำเส้นทางอพยพหลัก/สำรอง</li>
+              <li>วิเคราะห์จุดคอขวดและพื้นที่เสี่ยงติดค้าง</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-num">4</div>
+          <div class="phase-card">
+            <h3>Phase 4: Drill Dashboard & After Action Review</h3>
+            <div class="phase-meta">สัปดาห์ที่ 9-12</div>
+            <ul>
+              <li>บันทึกเวลาแจ้งเหตุ เริ่มอพยพ ถึงจุดรวมพล และตรวจนับครบ</li>
+              <li>แสดง Dashboard สรุปผลการซ้อม</li>
+              <li>สร้าง AI AAR Report และ Corrective Action Plan</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>5. Sample Data สำหรับ Prototype</h2>
+          <p class="section-note">ใช้ข้อมูลตัวอย่างนี้เพื่อให้ Claude สร้าง Prototype ได้ทันที</p>
+        </div>
+        <span class="pill">Mock Data</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>อาคารตัวอย่าง</h3>
+          <ul>
+            <li>ชื่ออาคาร: อาคารสำนักงานและศูนย์ควบคุม</li>
+            <li>จำนวนชั้น: 4 ชั้น</li>
+            <li>จำนวนพนักงาน: 230 คน</li>
+            <li>จุดรวมพล: Assembly Point A และ Assembly Point B</li>
+            <li>ทางออกหลัก: ประตูหน้าอาคาร, ประตูฝั่งตะวันออก, ประตู Loading Area</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>พื้นที่เสี่ยง</h3>
+          <ul>
+            <li>ห้อง MDB</li>
+            <li>ห้อง Battery</li>
+            <li>คลังเก็บสารเคมี</li>
+            <li>Pantry</li>
+            <li>Server Room</li>
+          </ul>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>รายละเอียดเหตุการณ์</th>
+            <th>ผลลัพธ์ที่ระบบควรแสดง</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Scenario 1</td>
+            <td>ไฟไหม้ห้อง MDB ชั้น 1</td>
+            <td>ปิดเส้นทางใกล้ MDB, แนะนำทางออกสำรอง, แจ้งทีมตัดไฟ</td>
+          </tr>
+          <tr>
+            <td>Scenario 2</td>
+            <td>ควันปกคลุมทางเดินชั้น 2</td>
+            <td>เปลี่ยนเส้นทางไปบันไดสำรองและแจ้ง Area Warden ตรวจคนติดค้าง</td>
+          </tr>
+          <tr>
+            <td>Scenario 3</td>
+            <td>บันไดหนีไฟฝั่งตะวันออกใช้งานไม่ได้</td>
+            <td>ระบบคำนวณเส้นทางสำรองและแสดงจุดคอขวด</td>
+          </tr>
+          <tr>
+            <td>Scenario 4</td>
+            <td>พบผู้บาดเจ็บใกล้ห้อง Server</td>
+            <td>แจ้ง First Aid Team, จำกัดการเข้าพื้นที่ และกำหนดเส้นทางเคลื่อนย้าย</td>
+          </tr>
+          <tr>
+            <td>Scenario 5</td>
+            <td>มีผู้มาติดต่อยังตรวจนับไม่ครบ</td>
+            <td>แจ้ง Security ตรวจ visitor log และส่งทีมค้นหาในพื้นที่ปลอดภัย</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>6. Data Model เบื้องต้น</h2>
+          <p class="section-note">ชุด Entity ที่ควรใช้เป็นฐานข้อมูลในรอบพัฒนา</p>
+        </div>
+        <span class="pill">Database Schema</span>
+      </div>
+
+      <div class="grid-4">
+        <div class="card"><h3>Building</h3><p>ข้อมูลอาคาร พิกัด จำนวนชั้น ประเภทอาคาร</p></div>
+        <div class="card"><h3>Floor</h3><p>ข้อมูลชั้น แปลน พื้นที่ และจำนวนคน</p></div>
+        <div class="card"><h3>Zone / Room</h3><p>ห้อง พื้นที่เสี่ยง ระดับความเสี่ยง และผู้รับผิดชอบ</p></div>
+        <div class="card"><h3>Exit / Stair</h3><p>ประตู ทางออก บันได สถานะใช้งานได้/ไม่ได้</p></div>
+        <div class="card"><h3>Assembly Point</h3><p>จุดรวมพล ความจุ และเส้นทางเข้าถึง</p></div>
+        <div class="card"><h3>Emergency Asset</h3><p>ถังดับเพลิง Hose Reel Alarm Detector Emergency Light</p></div>
+        <div class="card"><h3>Emergency Team</h3><p>รายชื่อทีม บทบาท หน้าที่ และพื้นที่รับผิดชอบ</p></div>
+        <div class="card"><h3>Drill Event</h3><p>การซ้อม เวลา KPI ผลลัพธ์ และข้อบกพร่อง</p></div>
+        <div class="card"><h3>Scenario</h3><p>เหตุจำลอง จุดเกิดเหตุ ระดับความรุนแรง และข้อจำกัด</p></div>
+        <div class="card"><h3>Evacuation Route</h3><p>เส้นทางหลัก สำรอง จุดคอขวด และเวลาคาดการณ์</p></div>
+        <div class="card"><h3>AAR Report</h3><p>สรุปผลหลังซ้อม บทเรียน และข้อเสนอแนะ</p></div>
+        <div class="card"><h3>Corrective Action</h3><p>มาตรการแก้ไข Owner Due Date และสถานะการปิดงาน</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>7. Safety Guardrails</h2>
+          <p class="section-note">ข้อจำกัดด้านความปลอดภัยที่ Claude ต้องสะท้อนในระบบ</p>
+        </div>
+        <span class="pill">Critical Safety Rule</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>สิ่งที่ระบบต้องทำ</h3>
+          <ul>
+            <li>ระบุชัดว่า AI เป็น Decision Support เท่านั้น</li>
+            <li>ให้ผู้บัญชาการเหตุการณ์เป็นผู้ตัดสินใจขั้นสุดท้าย</li>
+            <li>แนะนำการอพยพออกจากพื้นที่อันตราย ไม่ใช่ให้บุคคลทั่วไปเข้าไปในพื้นที่เสี่ยง</li>
+            <li>แสดงคำเตือนเมื่อ Scenario มีความเสี่ยงสูง</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>สิ่งที่ระบบต้องหลีกเลี่ยง</h3>
+          <ul>
+            <li>ห้ามแนะนำให้พนักงานทั่วไปกลับเข้าอาคาร</li>
+            <li>ห้ามสั่งการดับเพลิงแทนผู้มีหน้าที่</li>
+            <li>ห้ามทำให้คำแนะนำ AI ดูเหมือนคำสั่งทางกฎหมายหรือคำสั่งฉุกเฉินจริง</li>
+            <li>ห้ามละเลยแผนฉุกเฉินที่องค์กรอนุมัติไว้แล้ว</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="concept">
+        <strong>ข้อความเตือนที่ควรแสดงในระบบ</strong>
+        คำแนะนำจาก AI เป็นข้อมูลสนับสนุนการตัดสินใจเท่านั้น การตัดสินใจจริงต้องอยู่ภายใต้ผู้บัญชาการเหตุการณ์ แผนฉุกเฉินที่ได้รับอนุมัติ และข้อกำหนดความปลอดภัยขององค์กร
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>8. Master Prompt สำหรับวางใน Claude Project Instructions</h2>
+          <p class="section-note">คัดลอกข้อความด้านล่างไปวางใน Claude Project Instructions ได้ทันที</p>
+        </div>
+        <span class="pill">Copy to Claude</span>
+      </div>
+
+      <div class="prompt-box">
+        <div class="prompt-title">
+          Master Project Prompt
+          <span>ใส่ใน Claude Project Instructions</span>
+        </div>
+<pre>คุณคือ Senior Product Designer + Full-stack Developer + Safety Technology Consultant
+
+โปรเจกต์นี้ชื่อ:
+
+AI Fire Emergency Digital Twin
+
+เป้าหมายของโปรเจกต์:
+สร้าง Web Application สำหรับจำลองพื้นที่อาคารจริง เพื่อใช้วางแผนฉุกเฉินกรณีเกิดเหตุเพลิงไหม้ โดยใช้แนวคิด Digital Twin ผสาน Google Maps, Floor Plan, Safety Layer และ AI Simulation เพื่อช่วยให้ จป., ทีมฉุกเฉิน, Fire Warden และผู้บัญชาการเหตุการณ์ สามารถจำลองสถานการณ์ วิเคราะห์เส้นทางอพยพ และสรุปผลการฝึกซ้อมได้อย่างเป็นระบบ
+
+บริบทของระบบ:
+ระบบนี้ไม่ได้ใช้ Google Maps เพื่อสร้างข้อมูลภายในอาคารทั้งหมดโดยอัตโนมัติ แต่ใช้ Google Maps เป็นฐานแผนที่ภายนอกอาคาร เช่น ตำแหน่งอาคาร ถนน ทางเข้าออก จุดรวมพล และพื้นที่โดยรอบ ส่วนข้อมูลภายในอาคารจะมาจาก Floor Plan, CAD, BIM หรือข้อมูลที่องค์กรจัดเตรียมเอง
+
+แนวคิดหลัก:
+Google Maps = พื้นที่จริงภายนอกอาคาร
+Floor Plan / BIM = โครงสร้างภายในอาคาร
+Safety Layer = ข้อมูลความปลอดภัย เช่น ทางหนีไฟ จุดรวมพล ถังดับเพลิง Fire Alarm Detector จุดเสี่ยง
+AI Simulation = วิเคราะห์สถานการณ์เพลิงไหม้ แนะนำเส้นทางอพยพ และสรุป After Action Review
+
+กลุ่มผู้ใช้งาน:
+1. จป.วิชาชีพ
+2. Fire Warden / Area Warden
+3. Incident Commander
+4. Facility / Maintenance
+5. Security
+6. ผู้บริหารที่ต้องการดู Dashboard
+
+ฟีเจอร์หลักที่ต้องการ:
+1. Dashboard ภาพรวมอาคาร
+2. Map View แสดงอาคารบนแผนที่จริง
+3. Floor Plan View แสดงแปลนแต่ละชั้น
+4. Safety Asset Mapping สำหรับปักจุดอุปกรณ์ฉุกเฉิน
+5. Fire Risk Zone แสดงพื้นที่เสี่ยงสูง กลาง ต่ำ
+6. Scenario Builder สำหรับสร้างเหตุจำลองเพลิงไหม้
+7. Evacuation Simulation แนะนำเส้นทางอพยพหลักและสำรอง
+8. Incident Command Dashboard สำหรับติดตามสถานะเหตุการณ์
+9. Drill Timer บันทึกเวลาฝึกซ้อม
+10. AI After Action Review สรุปผลหลังซ้อม พร้อม Corrective Action
+
+โครงสร้างข้อมูลเบื้องต้น:
+- Building
+- Floor
+- Room / Zone
+- Exit
+- Stair
+- Assembly Point
+- Emergency Equipment
+- Fire Risk Area
+- Emergency Team
+- Drill Event
+- Scenario
+- Evacuation Route
+- After Action Review
+- Corrective Action
+
+MVP ที่ต้องการสร้างก่อน:
+ให้สร้าง Web App Prototype ที่ยังไม่ต้องเชื่อม API จริง แต่ต้องมี UI/UX และข้อมูลจำลองครบพอสำหรับนำเสนอ
+
+หน้าจอที่ต้องมีใน MVP:
+1. Overview Dashboard
+2. Building Map
+3. Floor Plan & Safety Layer
+4. Fire Scenario Builder
+5. Evacuation Simulation
+6. Drill Dashboard
+7. AI After Action Review Report
+
+ข้อกำหนดด้าน UI:
+- รูปแบบทันสมัย ใช้งานง่าย เหมาะกับงานความปลอดภัย
+- ใช้โทนสีขาว เทา เขียว น้ำเงิน ส้ม และแดง
+- มี Card, Badge, Timeline, Status, Heatmap และ Table
+- ใช้ภาษาไทยเป็นหลัก
+- รองรับการนำเสนอผู้บริหาร
+- หน้าจอต้องดูเหมือนระบบใช้งานจริง ไม่ใช่แค่หน้า Landing Page
+- Layout ต้องเป็น Responsive ใช้งานได้ทั้ง Desktop และ Tablet
+
+ข้อมูลตัวอย่างสำหรับ Prototype:
+อาคารตัวอย่าง: อาคารสำนักงานและศูนย์ควบคุม
+จำนวนชั้น: 4 ชั้น
+จำนวนพนักงาน: 230 คน
+จุดรวมพล: Assembly Point A และ Assembly Point B
+พื้นที่เสี่ยง:
+- ห้อง MDB
+- ห้อง Battery
+- คลังเก็บสารเคมี
+- Pantry
+- Server Room
+
+Scenario ตัวอย่าง:
+1. ไฟไหม้ห้อง MDB ชั้น 1
+2. ควันปกคลุมทางเดินชั้น 2
+3. บันไดหนีไฟฝั่งตะวันออกใช้งานไม่ได้
+4. พบผู้บาดเจ็บใกล้ห้อง Server
+5. มีผู้มาติดต่อยังตรวจนับไม่ครบ
+
+KPI ที่ต้องแสดง:
+- เวลาพบเหตุถึงแจ้งเหตุ
+- เวลาเริ่มอพยพ
+- เวลาเข้าจุดรวมพล
+- เวลาตรวจนับครบ
+- จำนวนคนครบ / ไม่ครบ
+- จำนวนข้อบกพร่อง
+- จำนวน Corrective Action ที่ยังไม่ปิด
+
+ข้อจำกัด:
+- ยังไม่ต้องเชื่อม Google Maps API จริงในรอบแรก
+- ใช้แผนที่จำลองหรือ placeholder map ได้
+- ยังไม่ต้องใช้ AI API จริง ให้จำลองผลลัพธ์ AI ด้วยข้อมูลตัวอย่างก่อน
+- ห้ามทำระบบที่แนะนำให้คนเสี่ยงเข้าไปในพื้นที่อันตราย
+- ระบบต้องระบุว่า AI เป็น Decision Support เท่านั้น การตัดสินใจจริงต้องอยู่ภายใต้ผู้บัญชาการเหตุการณ์และแผนฉุกเฉินที่ได้รับอนุมัติ
+
+ผลลัพธ์ที่ต้องการ:
+เริ่มจากการสร้าง Project Plan และ Architecture ก่อน จากนั้นสร้าง Prototype หน้าแรกให้เห็นภาพรวมระบบ แล้วค่อยขยายไปแต่ละหน้าจอ</pre>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>9. Prompt เริ่มสั่งงาน Claude หลังสร้าง Project</h2>
+          <p class="section-note">ใช้เป็นข้อความแรกเพื่อให้ Claude เริ่มทำ Prototype</p>
+        </div>
+        <span class="pill">Start Prompt</span>
+      </div>
+
+      <div class="prompt-box">
+        <div class="prompt-title">
+          First Message to Claude
+          <span>วางเป็นคำสั่งแรกในแชท</span>
+        </div>
+<pre>เริ่มสร้าง Prototype ระบบ AI Fire Emergency Digital Twin ตาม Project Instructions
+
+ขอให้เริ่มจาก:
+1. สรุป Architecture ของระบบ
+2. ออกแบบ Sitemap / Navigation
+3. สร้าง UI Prototype หน้า Overview Dashboard
+4. ใช้ข้อมูลจำลองภาษาไทย
+5. ทำหน้าจอให้ดูเหมือนระบบใช้งานจริงสำหรับงานแผนฉุกเฉินเพลิงไหม้
+
+ข้อกำหนดเพิ่มเติม:
+- สร้างเป็น single-page web app ในไฟล์เดียว
+- ใช้ HTML, CSS และ JavaScript ทั้งหมดใน artifact เดียว
+- ไม่ต้องเชื่อม Google Maps API จริง ให้ใช้ placeholder map ก่อน
+- ไม่ต้องเชื่อม AI API จริง ให้จำลองผลลัพธ์ AI ด้วยข้อมูลตัวอย่าง
+- ต้องคลิกเปลี่ยนหน้าหลักได้ เช่น Dashboard, Building Map, Floor Plan, Scenario, Evacuation, Drill, AAR Report
+- UI ต้องดูทันสมัย สะอาด เหมาะกับงาน Safety และใช้ภาษาไทยเป็นหลัก
+- ใส่ข้อความเตือนว่า AI เป็นเพียง Decision Support ไม่ใช่ผู้สั่งการเหตุฉุกเฉิน
+
+หลังจากสร้างหน้าแรกแล้ว ให้เสนอขั้นตอนถัดไปสำหรับหน้า Building Map, Floor Plan, Scenario Builder และ Drill Dashboard</pre>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>10. Prompt สำหรับให้ Claude สร้าง Code รอบต่อไป</h2>
+          <p class="section-note">ใช้เมื่อ Claude สร้างหน้าแรกแล้ว และต้องการขยายระบบให้ครบ</p>
+        </div>
+        <span class="pill">Next Iteration</span>
+      </div>
+
+      <div class="prompt-box">
+        <div class="prompt-title">
+          Development Continuation Prompt
+          <span>ใช้ต่อหลังได้ Prototype หน้าแรก</span>
+        </div>
+<pre>ขยาย Prototype ให้ครบทุกหน้าจอตาม MVP Scope
+
+ต้องการให้เพิ่ม:
+1. Building Map Page
+   - แสดงอาคารจำลองบนแผนที่
+   - มีจุดเข้าออกอาคาร
+   - จุดจอดรถฉุกเฉิน
+   - Assembly Point A / B
+   - เส้นทางรถดับเพลิงเข้าอาคาร
+
+2. Floor Plan & Safety Layer Page
+   - เลือกชั้น 1-4 ได้
+   - แสดงห้องหลัก ทางเดิน บันได ทางหนีไฟ
+   - ปักจุดถังดับเพลิง Alarm Detector Emergency Light
+   - แสดงพื้นที่เสี่ยงด้วยสี High / Medium / Low
+
+3. Fire Scenario Builder Page
+   - เลือกจุดเกิดเหตุ
+   - เลือกระดับความรุนแรง
+   - กำหนดจำนวนคนในอาคาร
+   - เลือกทางออกที่ใช้งานไม่ได้
+   - กดปุ่ม Generate Scenario เพื่อให้ระบบจำลองผลลัพธ์
+
+4. Evacuation Simulation Page
+   - แสดงเส้นทางอพยพหลักและสำรอง
+   - แสดงเวลาคาดการณ์
+   - แสดงจุดคอขวด
+   - แสดงพื้นที่ที่ต้องให้ทีมช่วยเหลือ
+
+5. Drill Dashboard Page
+   - Timer สำหรับเหตุการณ์
+   - บันทึกเวลาแจ้งเหตุ เริ่มอพยพ ถึงจุดรวมพล ตรวจนับครบ
+   - จำนวนคนครบ / ไม่ครบ
+   - สถานะทีมฉุกเฉิน
+
+6. AI After Action Review Page
+   - สรุปจุดแข็ง
+   - สรุปข้อบกพร่อง
+   - Root Cause เบื้องต้น
+   - Corrective Action
+   - Owner และ Due Date
+
+ให้คง Style เดิม และทำให้ทุกหน้าเชื่อมโยงกันด้วยข้อมูลจำลองชุดเดียวกัน</pre>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>11. Checklist ก่อนส่งให้ Claude</h2>
+          <p class="section-note">ตรวจให้ครบก่อนนำเอกสารนี้ไปใช้สร้าง Project</p>
+        </div>
+        <span class="pill">Ready Checklist</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>สิ่งที่ควรส่งให้ Claude</h3>
+          <ul>
+            <li>ไฟล์ HTML ฉบับนี้</li>
+            <li>Project Instructions จากหัวข้อที่ 8</li>
+            <li>First Message จากหัวข้อที่ 9</li>
+            <li>ข้อมูลอาคารจริง หากมี เช่น ชื่ออาคาร จำนวนชั้น จุดรวมพล และพื้นที่เสี่ยง</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>สิ่งที่ควรขอ Claude หลังได้ Prototype</h3>
+          <ul>
+            <li>ปรับ UI ให้เหมาะกับ Branding องค์กร</li>
+            <li>แยก Component สำหรับพัฒนาต่อ</li>
+            <li>เสนอ Database Schema แบบละเอียด</li>
+            <li>เสนอขั้นตอนเชื่อม Google Maps API และ AI API ในอนาคต</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <strong>Claude Project Brief: AI Fire Emergency Digital Twin</strong><br />
+      เอกสารนี้ใช้เป็น Project Brief + Roadmap + Prompt สำหรับเริ่มสร้าง Prototype ใน Claude
+      <div class="print-note">สามารถเปิดใน Browser หรือ Print / Save as PDF เพื่อส่งต่อทีมพัฒนาได้</div>
+    </div>
+  </main>
+</body>
+</html>
