@@ -1439,6 +1439,149 @@ const fmtTime = s => Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(
 /* Persistence (localStorage + Export/Import JSON)            */
 /* ========================================================= */
 const STORAGE_KEY = 'aidt_occ_state_v1';
+const STATE_KEYS = ['exportedAt','scenarios','nextId','activeScenario','car','carNextId','verify','liveDrill'];
+const SCENARIO_KEYS = [
+  'id','name','type','floor','floorLabel','origin','originLabel','time','people',
+  'blockW','blockE','night','note','occ','casualty','casSeverity','casLocation',
+  'casMethod','missing','searchPriority','trapped','trappedFloor','fuelType',
+  'smokeLevel','toxicity','spreadRate','spread'
+];
+const SCENARIO_TYPES = ['เพลิงไหม้','แผ่นดินไหว','สารเคมีรั่วไหล','วัตถุต้องสงสัย / ขู่วางระเบิด','ไฟฟ้าดับทั้งอาคาร'];
+const FLOOR_IDS = ['RF','5','4','3','2','GF'];
+const VERIFY_KEYS = ['checked','by','date','note'];
+const KPI_KEYS = ['alarmToConfirm','confirmToGA','evacSec','musterSec','externalSec'];
+const LAP_KEYS = ['confirm','ga','evac','muster','ext'];
+function stateValidationError(message){ throw new Error(message); }
+function isPlainObject(v){ return v !== null && typeof v === 'object' && !Array.isArray(v) && Object.getPrototypeOf(v) === Object.prototype; }
+function exactKeys(obj, allowed, label){
+  if(!isPlainObject(obj)) stateValidationError(label+' ต้องเป็น object');
+  const unknown = Object.keys(obj).find(k=>!allowed.includes(k));
+  if(unknown) stateValidationError(label+' มีฟิลด์ที่ไม่รู้จัก: '+unknown);
+}
+function validString(v, label, max, allowEmpty=true){
+  if(typeof v !== 'string' || v.length>max || (!allowEmpty && !v.length) || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(v))
+    stateValidationError(label+' ไม่ถูกต้อง');
+}
+function validInt(v, label, min, max){
+  if(!Number.isInteger(v) || v<min || v>max) stateValidationError(label+' ไม่ถูกต้อง');
+}
+function validBool(v, label){ if(typeof v !== 'boolean') stateValidationError(label+' ไม่ถูกต้อง'); }
+function validEnum(v, allowed, label){ if(!allowed.includes(v)) stateValidationError(label+' ไม่ถูกต้อง'); }
+function validateScenario(sc, index){
+  const label = 'scenario['+index+']';
+  exactKeys(sc, SCENARIO_KEYS, label);
+  ['id','name','type','floor','origin','time','people','blockW','blockE','night','note'].forEach(k=>{
+    if(!Object.prototype.hasOwnProperty.call(sc,k)) stateValidationError(label+' ขาดฟิลด์ '+k);
+  });
+  validInt(sc.id,label+'.id',1,1000000);
+  validString(sc.name,label+'.name',160,false);
+  validEnum(sc.type,SCENARIO_TYPES,label+'.type');
+  if(!((typeof sc.floor==='number' && Number.isInteger(sc.floor) && sc.floor>=1 && sc.floor<=5)
+      || sc.floor==='ดาดฟ้า' || sc.floor==='Ground'))
+    stateValidationError(label+'.floor ไม่ถูกต้อง');
+  validEnum(sc.origin,['svr','offA','offB','meet','lobby'],label+'.origin');
+  if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(sc.time)) stateValidationError(label+'.time ไม่ถูกต้อง');
+  validInt(sc.people,label+'.people',1,250);
+  ['blockW','blockE','night'].forEach(k=>validBool(sc[k],label+'.'+k));
+  if(sc.blockW && sc.blockE) stateValidationError(label+' ปิดทางออกทั้งสองทาง');
+  validString(sc.note,label+'.note',1000);
+  if(sc.floorLabel!==undefined) validString(sc.floorLabel,label+'.floorLabel',40,false);
+  if(sc.originLabel!==undefined) validString(sc.originLabel,label+'.originLabel',160,false);
+  ['occ','spread'].forEach(k=>{ if(sc[k]!==undefined) validBool(sc[k],label+'.'+k); });
+  [['casualty',0,5],['missing',0,5],['trapped',0,3]].forEach(([k,min,max])=>{ if(sc[k]!==undefined) validInt(sc[k],label+'.'+k,min,max); });
+  const enums = {
+    casSeverity:['เขียว บาดเจ็บเล็กน้อย','เหลือง ปานกลาง','แดง รุนแรง'],
+    casLocation:['ทางเดินกลาง','ห้องต้นเพลิง','หน้าบันไดหนีไฟ','ห้องน้ำ'],
+    casMethod:['พยุงเดินโดยเพื่อนร่วมงาน (Buddy)','ทีม First Aid เข้าถึงจุด + เปลสนาม','รอ EMT เข้าช่วยเหลือ ห้ามเคลื่อนย้ายเอง'],
+    searchPriority:['สูง','กลาง','ต่ำ'],
+    trappedFloor:['ดาดฟ้า','ชั้น 5','ชั้น 4','ชั้น 3','ชั้น 2'],
+    fuelType:['Class A วัสดุทั่วไป/กระดาษ','Class B ของเหลวไวไฟ/น้ำมัน','Class C อุปกรณ์ไฟฟ้า'],
+    smokeLevel:['น้อย','ปานกลาง','หนาแน่น'],
+    toxicity:['ต่ำ','ปานกลาง','สูง (พลาสติก/สารเคมี)'],
+    spreadRate:['ช้า','ปานกลาง','เร็ว']
+  };
+  Object.keys(enums).forEach(k=>{ if(sc[k]!==undefined) validEnum(sc[k],enums[k],label+'.'+k); });
+}
+function validateCAR(c, index){
+  const label = 'car['+index+']';
+  exactKeys(c,['id','item','found','owner','due','status'],label);
+  ['id','item','found','owner','due','status'].forEach(k=>{ if(!Object.prototype.hasOwnProperty.call(c,k)) stateValidationError(label+' ขาดฟิลด์ '+k); });
+  validInt(c.id,label+'.id',1,1000000);
+  validString(c.item,label+'.item',500,false);
+  validString(c.found,label+'.found',80,false);
+  validString(c.owner,label+'.owner',120,false);
+  validString(c.due,label+'.due',80,false);
+  validEnum(c.status,['doing','done'],label+'.status');
+}
+function validateSecondsObject(obj, keys, label){
+  exactKeys(obj,keys,label);
+  Object.keys(obj).forEach(k=>{ if(obj[k]!==null) validInt(obj[k],label+'.'+k,0,86400); });
+}
+function validatePersistedState(data){
+  exactKeys(data,STATE_KEYS,'state');
+  ['scenarios','nextId','activeScenario','car','carNextId','verify','liveDrill'].forEach(k=>{
+    if(!Object.prototype.hasOwnProperty.call(data,k)) stateValidationError('state ขาดฟิลด์ '+k);
+  });
+  if(data.exportedAt!==undefined){
+    validString(data.exportedAt,'exportedAt',40,false);
+    if(!Number.isFinite(Date.parse(data.exportedAt))) stateValidationError('exportedAt ไม่ถูกต้อง');
+  }
+  if(data.scenarios!==undefined){
+    if(!Array.isArray(data.scenarios) || data.scenarios.length>100) stateValidationError('scenarios ไม่ถูกต้อง');
+    data.scenarios.forEach(validateScenario);
+    if(new Set(data.scenarios.map(s=>s.id)).size!==data.scenarios.length) stateValidationError('scenario id ซ้ำกัน');
+  }
+  if(data.nextId!==undefined) validInt(data.nextId,'nextId',1,1000001);
+  if(data.activeScenario!==undefined && data.activeScenario!==null) validInt(data.activeScenario,'activeScenario',1,1000000);
+  if(data.car!==undefined){
+    if(!Array.isArray(data.car) || data.car.length>500) stateValidationError('car ไม่ถูกต้อง');
+    data.car.forEach(validateCAR);
+    if(new Set(data.car.map(c=>c.id)).size!==data.car.length) stateValidationError('car id ซ้ำกัน');
+  }
+  if(data.carNextId!==undefined) validInt(data.carNextId,'carNextId',1,1000001);
+  if(data.verify!==undefined){
+    exactKeys(data.verify,FLOOR_IDS,'verify');
+    Object.keys(data.verify).forEach(fid=>{
+      const v=data.verify[fid];
+      exactKeys(v,VERIFY_KEYS,'verify.'+fid);
+      VERIFY_KEYS.forEach(k=>{ if(!Object.prototype.hasOwnProperty.call(v,k)) stateValidationError('verify.'+fid+' ขาดฟิลด์ '+k); });
+      validBool(v.checked,'verify.'+fid+'.checked');
+      validString(v.by,'verify.'+fid+'.by',120);
+      validString(v.date,'verify.'+fid+'.date',80);
+      validString(v.note,'verify.'+fid+'.note',500);
+    });
+  }
+  if(data.liveDrill!==undefined && data.liveDrill!==null){
+    const r=data.liveDrill;
+    exactKeys(r,['when','kpi','laps','casualty','missing','trapped','note'],'liveDrill');
+    ['when','kpi','laps','casualty','missing','trapped','note'].forEach(k=>{ if(!Object.prototype.hasOwnProperty.call(r,k)) stateValidationError('liveDrill ขาดฟิลด์ '+k); });
+    validString(r.when,'liveDrill.when',120,false);
+    validateSecondsObject(r.kpi,KPI_KEYS,'liveDrill.kpi');
+    validateSecondsObject(r.laps,LAP_KEYS,'liveDrill.laps');
+    validInt(r.casualty,'liveDrill.casualty',0,1000);
+    validInt(r.missing,'liveDrill.missing',0,1000);
+    validInt(r.trapped,'liveDrill.trapped',0,1000);
+    validString(r.note,'liveDrill.note',1000);
+  }
+  const scenarios=data.scenarios===undefined ? state.scenarios : data.scenarios;
+  const car=data.car===undefined ? state.car : data.car;
+  const active=data.activeScenario===undefined ? state.activeScenario : data.activeScenario;
+  const next=data.nextId===undefined ? state.nextId : data.nextId;
+  const carNext=data.carNextId===undefined ? state.carNextId : data.carNextId;
+  if(active!==null && !scenarios.some(s=>s.id===active)) stateValidationError('activeScenario ไม่พบใน scenarios');
+  if(scenarios.some(s=>s.id>=next)) stateValidationError('nextId ไม่มากกว่า scenario id');
+  if(car.some(c=>c.id>=carNext)) stateValidationError('carNextId ไม่มากกว่า car id');
+  return data;
+}
+function applyPersistedState(data){
+  if(data.scenarios!==undefined) state.scenarios = data.scenarios;
+  if(data.nextId!==undefined) state.nextId = data.nextId;
+  if(data.activeScenario!==undefined) state.activeScenario = data.activeScenario;
+  if(data.car!==undefined) state.car = data.car;
+  if(data.carNextId!==undefined) state.carNextId = data.carNextId;
+  if(data.verify!==undefined) state.verify = data.verify;
+  if(data.liveDrill!==undefined) state.liveDrill = data.liveDrill;
+}
 function saveState(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -1451,15 +1594,10 @@ function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return;
-    const s = JSON.parse(raw);
-    if(s.scenarios) state.scenarios = s.scenarios;
-    if(s.nextId) state.nextId = s.nextId;
-    if(s.activeScenario) state.activeScenario = s.activeScenario;
-    if(s.car) state.car = s.car;
-    if(s.carNextId) state.carNextId = s.carNextId;
-    if(s.verify) state.verify = s.verify;
-    if(s.liveDrill) state.liveDrill = s.liveDrill;
-  }catch(e){}
+    applyPersistedState(validatePersistedState(JSON.parse(raw)));
+  }catch(e){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(ignore){}
+  }
 }
 loadState();
 
@@ -1616,17 +1754,12 @@ function importState(ev){
   if(!canUse('exportImport')){ toast('บทบาทนี้ไม่มีสิทธิ์ Import ข้อมูล'); ev.target.value=''; return; }
   const file = ev.target.files[0];
   if(!file) return;
+  if(file.size > 1024*1024){ toast('ไฟล์มีขนาดใหญ่เกินไป นำเข้าไม่สำเร็จ'); ev.target.value=''; return; }
   const reader = new FileReader();
   reader.onload = () => {
     try{
-      const data = JSON.parse(reader.result);
-      if(data.scenarios) state.scenarios = data.scenarios;
-      if(data.nextId) state.nextId = data.nextId;
-      if(data.activeScenario) state.activeScenario = data.activeScenario;
-      if(data.car) state.car = data.car;
-      if(data.carNextId) state.carNextId = data.carNextId;
-      if(data.verify) state.verify = data.verify;
-      if(data.liveDrill) state.liveDrill = data.liveDrill;
+      const data = validatePersistedState(JSON.parse(reader.result));
+      applyPersistedState(data);
       saveState();
       renderScenarioList(); renderCAR(); renderVerify(); renderLiveDrillResult(); renderOCC();
       toast('นำเข้าข้อมูลสำเร็จ');
@@ -2336,16 +2469,28 @@ function renderScenarioList(){
   el.innerHTML = state.scenarios.map(sc=>`
     <div class="sc-item ${sc.id===state.activeScenario?'active-sc':''}">
       <div class="top">
-        <h4>${sc.name} ${sc.id===state.activeScenario?'<span class="chip orange">ใช้งานอยู่</span>':''}</h4>
+        <h4>${esc(sc.name)} ${sc.id===state.activeScenario?'<span class="chip orange">ใช้งานอยู่</span>':''}</h4>
         <div>
-          ${sc.id!==state.activeScenario?`<button class="btn sm" onclick="setActiveScenario(${sc.id})">ใช้งาน</button>`:''}
-          <button class="btn sm primary" onclick="setActiveScenario(${sc.id});goPage('sim');simReset();simToggle()">▶ รัน</button>
-          <button class="btn sm danger" onclick="delScenario(${sc.id})">ลบ</button>
+          ${sc.id!==state.activeScenario?`<button class="btn sm" data-scenario-action="activate" data-scenario-id="${sc.id}">ใช้งาน</button>`:''}
+          <button class="btn sm primary" data-scenario-action="run" data-scenario-id="${sc.id}">▶ รัน</button>
+          <button class="btn sm danger" data-scenario-action="delete" data-scenario-id="${sc.id}">ลบ</button>
         </div>
       </div>
-      <div class="meta">${scDesc(sc)}</div>
-      ${sc.note?`<div class="meta">📝 ${sc.note}</div>`:''}
+      <div class="meta">${esc(scDesc(sc))}</div>
+      ${sc.note?`<div class="meta">📝 ${esc(sc.note)}</div>`:''}
     </div>`).join('');
+  el.querySelectorAll('[data-scenario-action]').forEach(button=>{
+    button.addEventListener('click', ()=>{
+      const id = Number(button.dataset.scenarioId);
+      if(!Number.isInteger(id) || !state.scenarios.some(sc=>sc.id===id)) return;
+      if(button.dataset.scenarioAction==='activate') setActiveScenario(id);
+      if(button.dataset.scenarioAction==='run'){
+        setActiveScenario(id);
+        goPage('sim'); simReset(); simToggle();
+      }
+      if(button.dataset.scenarioAction==='delete') delScenario(id);
+    });
+  });
 }
 renderScenarioList();
 
@@ -2358,8 +2503,17 @@ const SIM = { running:false, t:0, agents:[], evacuated:0, maxQueue:0, exits:[], 
 function logEvent(t, text, cls){
   SIM.events.push({t:Math.round(t), text, cls});
   const colors = {gray:'var(--muted)', blue:'var(--blue)', green:'var(--green)', red:'var(--red)', yellow:'var(--yellow)', orange:'var(--accent)'};
-  $('#sim-evlog').insertAdjacentHTML('beforeend',
-    `<li><span class="t">${fmtTime(t)}</span><span class="dot" style="background:${colors[cls]||'var(--blue)'}"></span><span>${text}</span></li>`);
+  const li = document.createElement('li');
+  const time = document.createElement('span');
+  const dot = document.createElement('span');
+  const message = document.createElement('span');
+  time.className = 't';
+  time.textContent = fmtTime(t);
+  dot.className = 'dot';
+  dot.style.background = colors[cls] || 'var(--blue)';
+  message.textContent = text;
+  li.append(time,dot,message);
+  $('#sim-evlog').appendChild(li);
 }
 let simConfigured = false;
 const cv = $('#sim-canvas'), ctx = cv.getContext('2d');
@@ -2813,9 +2967,9 @@ function simDraw(){
 /* ========================================================= */
 /* OCC Drill 2568 page                                        */
 /* ========================================================= */
-function chipHTML(spec){ const [c,txt] = spec.split('|'); return `<span class="chip ${c}">${txt}</span>`; }
+function chipHTML(spec){ const [c,txt] = spec.split('|'); return `<span class="chip ${c}">${esc(txt)}</span>`; }
 function checkList(el, rows){
-  $(el).innerHTML = rows.map(r=>`<li><span>${r[0]}</span><span style="text-align:right;white-space:nowrap">${chipHTML(r[1])}</span></li>`).join('');
+  $(el).innerHTML = rows.map(r=>`<li><span>${esc(r[0])}</span><span style="text-align:right;white-space:nowrap">${chipHTML(r[1])}</span></li>`).join('');
 }
 
 /* ---------- Live Drill Mode (จับเวลาซ้อมจริง) ---------- */
@@ -3212,7 +3366,7 @@ function buildAARFromSim(){
       <p class="mt"><button class="btn primary no-print" onclick="goPage('sim')">🏃 ไปหน้า Evacuation Simulation</button></p>`;
   }
   const sc = r.scenario;
-  const scName = sc ? sc.name : 'สถานการณ์ค่าเริ่มต้น';
+  const scName = esc(sc ? sc.name : 'สถานการณ์ค่าเริ่มต้น');
   const over = r.evacSec - 300;
   const busiest = r.exits.slice().sort((a,b)=>b.count-a.count)[0];
   const blockedTxt = r.exits.filter(e=>e.blocked).map(e=>e.name).join(', ');
@@ -3225,10 +3379,10 @@ function buildAARFromSim(){
   </div>
   <h2>1. สรุปเหตุการณ์จำลอง</h2>
   <ul>
-    <li>ประเภทเหตุ: ${sc?sc.type:'เพลิงไหม้'} · ${sc?(sc.floorLabel || floorDisplay(sc.floor)):'ชั้น 5'} · บริเวณ${sc?scOriginName(sc):'Station Simulator 506'} · เวลา ${sc?sc.time:'14:00'} น.</li>
+    <li>ประเภทเหตุ: ${esc(sc?sc.type:'เพลิงไหม้')} · ${esc(sc?(sc.floorLabel || floorDisplay(sc.floor)):'ชั้น 5')} · บริเวณ${esc(sc?scOriginName(sc):'Station Simulator 506')} · เวลา ${esc(sc?sc.time:'14:00')} น.</li>
     <li>ผู้อพยพในแบบจำลอง: ${r.total} คน${sc&&sc.night?' (เงื่อนไขนอกเวลาทำการ)':''}</li>
     ${blockedTxt?`<li>อุปสรรคที่กำหนด: ${blockedTxt} ถูกปิดใช้งาน</li>`:''}
-    ${sc&&sc.note?`<li>หมายเหตุสถานการณ์: ${sc.note}</li>`:''}
+    ${sc&&sc.note?`<li>หมายเหตุสถานการณ์: ${esc(sc.note)}</li>`:''}
   </ul>
   <h2>2. ผลการอพยพเทียบเกณฑ์</h2>
   <ul>
@@ -3281,16 +3435,16 @@ function occAARSections(r){
       : '<li>สถานการณ์กำหนดเอง (ไม่อิงแผน OCC โดยตรง) — เทียบเฉพาะเกณฑ์เวลาและขั้นตอนมาตรฐาน</li>'}
     <li>เวลาช่วงภาคสนามหลัง General Alarm: อพยพ ${fmtTime(r.evacSec)}${r.missionSec>r.evacSec+5?` · ภารกิจรวม ${fmtTime(r.missionSec)}`:''} เทียบกรอบแผน (อพยพและตรวจนับสมบูรณ์ภายในนาทีที่ 13)${r.headcountSec?` · ตรวจนับรอบแรกที่ ${fmtTime(r.headcountSec)}`:''}</li>
     ${r.missing?`<li><b>จุดล่าช้า:</b> Muster & Headcount — ตรวจนับไม่ครบ ${r.missing} คน ต้องเปิด Rescue Task ก่อนปิดยอด ทำให้เวลารวมยืดออก</li>`:''}
-    ${r.trapped?`<li><b>จุดล่าช้า:</b> มีผู้ติดค้างที่ ${r.trappedFloor} ต้องรอ External Fire Service (รถกระเช้า/บันไดสูง) — ภารกิจปิดหลังการอพยพหลักเสร็จ</li>`:''}
+    ${r.trapped?`<li><b>จุดล่าช้า:</b> มีผู้ติดค้างที่ ${esc(r.trappedFloor)} ต้องรอ External Fire Service (รถกระเช้า/บันไดสูง) — ภารกิจปิดหลังการอพยพหลักเสร็จ</li>`:''}
     ${(!r.missing && !r.trapped)?'<li>ไม่มีขั้นตอนล่าช้าอย่างมีนัยสำคัญในช่วงจำลอง</li>':''}
     <li>เฟสหลังช่วงจำลอง (External Agency นาที 13-27 · Recovery นาที 27-33 · Return to Normal นาที 33-40 · รายงานอุบัติการณ์นาที 41) กำกับตามแผนใน Drill Plan Timeline</li>
   </ul>
   <h2>6.2 ผู้บาดเจ็บ / ผู้ติดค้าง / ผู้สูญหาย</h2>
   <ul>
-    <li>ผู้บาดเจ็บ: ${r.casualty} คน${r.casualty?` — ระดับ Triage ${sev} · ตำแหน่ง${sc.casLocation||'ทางเดินกลาง'} · วิธีช่วยเหลือ: ${sc.casMethod||'ทีม First Aid เข้าถึงจุด + เปลสนาม'} · ${sev.startsWith('เขียว')?'ดูแลที่ First Aid Area ไม่ต้องส่งโรงพยาบาล':'ส่งต่อ EMS (EMS Handoff) นำส่งโรงพยาบาล'+(sev.startsWith('แดง')?' เร่งด่วน Priority 1':'')}`:''}</li>
-    <li>ผู้สูญหาย/ตรวจนับไม่ครบ: ${r.missing} คน${r.missing?` — Search Priority ${sc.searchPriority||'กลาง'} · Rescue Task โดยทีมที่ได้รับมอบหมาย สถานะสุดท้าย FOUND ครบ ${r.rescued} คน โดยไม่มีพนักงานทั่วไปกลับเข้าอาคาร`:''}</li>
-    <li>ผู้ติดค้างที่สูง: ${r.trapped} คน${r.trapped?` ที่ ${r.trappedFloor} — ช่วยเหลือโดย External Fire Service (รถกระเช้า/บันไดสูง) สถานะสุดท้าย RESCUED ครบ ${r.trappedRescued} คน`:''}</li>
-    <li>เชื้อเพลิงและความรุนแรง: ${sc.fuelType||'ไม่ระบุ'} · ควัน${sc.smokeLevel||'น้อย'} · ความเป็นพิษ${sc.toxicity||'ต่ำ'} · อัตราลุกลาม${sc.spreadRate||'ปานกลาง'}${sc.smokeLevel==='หนาแน่น'?' — ควันหนาแน่นทำให้ความเร็วเดินลดลงประมาณ 25% ในแบบจำลอง':''}</li>
+    <li>ผู้บาดเจ็บ: ${r.casualty} คน${r.casualty?` — ระดับ Triage ${esc(sev)} · ตำแหน่ง${esc(sc.casLocation||'ทางเดินกลาง')} · วิธีช่วยเหลือ: ${esc(sc.casMethod||'ทีม First Aid เข้าถึงจุด + เปลสนาม')} · ${sev.startsWith('เขียว')?'ดูแลที่ First Aid Area ไม่ต้องส่งโรงพยาบาล':'ส่งต่อ EMS (EMS Handoff) นำส่งโรงพยาบาล'+(sev.startsWith('แดง')?' เร่งด่วน Priority 1':'')}`:''}</li>
+    <li>ผู้สูญหาย/ตรวจนับไม่ครบ: ${r.missing} คน${r.missing?` — Search Priority ${esc(sc.searchPriority||'กลาง')} · Rescue Task โดยทีมที่ได้รับมอบหมาย สถานะสุดท้าย FOUND ครบ ${r.rescued} คน โดยไม่มีพนักงานทั่วไปกลับเข้าอาคาร`:''}</li>
+    <li>ผู้ติดค้างที่สูง: ${r.trapped} คน${r.trapped?` ที่ ${esc(r.trappedFloor)} — ช่วยเหลือโดย External Fire Service (รถกระเช้า/บันไดสูง) สถานะสุดท้าย RESCUED ครบ ${r.trappedRescued} คน`:''}</li>
+    <li>เชื้อเพลิงและความรุนแรง: ${esc(sc.fuelType||'ไม่ระบุ')} · ควัน${esc(sc.smokeLevel||'น้อย')} · ความเป็นพิษ${esc(sc.toxicity||'ต่ำ')} · อัตราลุกลาม${esc(sc.spreadRate||'ปานกลาง')}${sc.smokeLevel==='หนาแน่น'?' — ควันหนาแน่นทำให้ความเร็วเดินลดลงประมาณ 25% ในแบบจำลอง':''}</li>
     <li>เป้าหมายอุบัติเหตุจากการซ้อมเป็นศูนย์: ${r.casualty? 'ผู้บาดเจ็บเป็นผู้แสดงตามบท (Simulated Casualty)' : 'ไม่มีผู้บาดเจ็บ'} — เป็นไปตามเป้า</li>
   </ul>
   <h2>6.3 การสื่อสารและประสานหน่วยงานภายนอก</h2>
@@ -3342,7 +3496,7 @@ function buildAARFromLiveDrill(){
   <h2>รายงานทบทวนหลังปฏิบัติ (After Action Review)</h2>
   <div class="aar-meta">
     <span>แหล่งข้อมูล: Live Drill Mode (จับเวลาซ้อมจริง)</span>
-    <span>บันทึกเมื่อ: ${r.when}</span>
+    <span>บันทึกเมื่อ: ${esc(r.when)}</span>
   </div>
   <h2>1. สรุปเหตุการณ์</h2>
   <ul>
