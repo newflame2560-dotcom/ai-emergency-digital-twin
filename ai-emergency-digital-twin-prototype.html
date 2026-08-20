@@ -259,7 +259,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px}
 <aside class="sidebar">
   <div class="brand">
     <div class="logo">🛰️</div>
-    <div class="name">AI Emergency<br>Digital Twin<small>OCC YL · Vector Digital Twin v1.9</small></div>
+    <div class="name">AI Emergency<br>Digital Twin<small>Building Registry · Vector Digital Twin v1.10</small></div>
   </div>
   <button class="nav-btn active" data-page="dashboard"><span class="ic">📊</span> Dashboard</button>
   <button class="nav-btn" data-page="map"><span class="ic">🗺️</span> Building Map</button>
@@ -270,9 +270,10 @@ canvas{display:block;width:100%;height:auto;border-radius:10px}
   <button class="nav-btn" data-page="occ"><span class="ic">🚒</span> OCC Drill 2568</button>
   <button class="nav-btn" data-page="aar"><span class="ic">🤖</span> AI AAR Report</button>
   <div class="foot">
+    <div class="chip blue" id="active-building-chip" style="display:inline-block;margin-bottom:10px">อาคารที่ใช้งาน: OCC YL</div>
     <div class="role-badge" id="role-badge" style="display:none"></div>
     <button class="btn sm" id="logout-btn" style="display:none;width:100%;margin-bottom:10px" onclick="logout()">ออกจากระบบ</button>
-    ต้นแบบ v1.9 · Validated structured AI output<br>ข้อมูลจำลอง · เฉพาะการฝึกซ้อม
+    ต้นแบบ v1.10 · Validated structured AI output · Building Registry<br>ข้อมูลจำลอง · เฉพาะการฝึกซ้อม
     <div style="display:flex;gap:6px;margin-top:10px">
       <button class="btn sm" id="export-btn" style="flex:1" onclick="exportState()" title="บันทึกไฟล์ข้อมูลปัจจุบันเป็น JSON">⬇ Export</button>
       <button class="btn sm" id="import-btn" style="flex:1" onclick="document.getElementById('import-file').click()" title="นำเข้าไฟล์ JSON ที่เคย Export ไว้">⬆ Import</button>
@@ -289,7 +290,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px}
 <section class="page active" id="page-dashboard">
   <div class="page-head">
     <h1>Dashboard ภาพรวมความพร้อมภาวะฉุกเฉิน</h1>
-    <p>ข้อมูล ณ วันอาทิตย์ที่ 6 กรกฎาคม 2569 เวลา 10:42 น. · OCC YL Operation Control Center (จำลอง)</p>
+    <p>ข้อมูล ณ วันอาทิตย์ที่ 6 กรกฎาคม 2569 เวลา 10:42 น. · <span id="dash-building-name">OCC YL Operation Control Center</span> (จำลอง)</p>
   </div>
 
   <div class="grid g4">
@@ -740,7 +741,7 @@ canvas{display:block;width:100%;height:auto;border-radius:10px}
       <div class="sim-stat"><div class="lb">เวลาจำลอง</div><div class="v" id="st-time">0:00</div></div>
       <div class="sim-stat"><div class="lb">อพยพแล้ว</div><div class="v" id="st-evac">0 / 0</div></div>
       <div class="sim-stat"><div class="lb">คิวสะสมสูงสุดหน้าทางออก</div><div class="v" id="st-queue">0 คน</div></div>
-      <div class="sim-stat"><div class="lb">เกณฑ์เวลาอพยพ</div><div class="v">5:00</div></div>
+      <div class="sim-stat"><div class="lb">เกณฑ์เวลาอพยพ</div><div class="v" id="st-target">5:00</div></div>
     </div>
     <div class="done-banner" id="sim-done">
       <span style="font-size:22px">✅</span>
@@ -936,92 +937,6 @@ const FLOORS = [
   {id:'2',  f:2,    label:'ชั้น 2', short:'2',  occ:74, scenario:true},
   {id:'GF', f:'GF', label:'Ground Floor', short:'G', occ:61, scenario:true}
 ];
-
-/* [v1.4] ชุดพิกัดอิงภาพ PNG เดิม — เลิกใช้แล้ว (แทนที่ด้วย FLOOR_PLANS เวกเตอร์ด้านล่าง) */
-const FLOOR_PLANS_PNG_LEGACY = {
-  GF:{label:'Ground Floor', source:'PDF pages 1-4', caveat:'Room matrix from Small Power / Layout Plan. Fire equipment and official evacuation routes must be verified separately.', rooms:[
-    {name:'Information & Lobby', no:'104', risk:'Medium', x:64, y:58, w:190, h:86, tags:'public_area, visitor_flow'},
-    {name:'Control Room 1', no:'134', risk:'High', x:274, y:58, w:206, h:86, tags:'control_room, critical_operation'},
-    {name:'Storage', no:'135', risk:'Medium-High', x:500, y:58, w:128, h:86, tags:'storage, combustible_load'},
-    {name:'VIP Presentation', no:'133', risk:'Medium', x:648, y:58, w:186, h:86, tags:'meeting_room, visitor_area'},
-    {name:'First Aid', no:'102', risk:'Low-Medium', x:64, y:330, w:150, h:80, tags:'first_aid, casualty_support'},
-    {name:'Security Office', no:'103', risk:'Medium', x:234, y:330, w:150, h:80, tags:'security, response_team'},
-    {name:'N2 Room', no:'130', risk:'High', x:614, y:330, w:104, h:80, tags:'gas_room, technical_hazard'},
-    {name:'AHU', no:'132', risk:'Medium-High', x:738, y:330, w:96, h:80, tags:'ahu, smoke_spread'},
-    {name:'Lift Hall', no:'125', risk:'Medium', x:414, y:328, w:82, h:84, tags:'lift_hall, no_lift_fire', node:true},
-    {name:'MST-01 / Stair Core', no:'128', risk:'Critical', x:512, y:324, w:82, h:92, tags:'stair, evacuation_core', node:true}
-  ]},
-  '2':{label:'2nd Floor', source:'PDF pages 5-7', caveat:'Schematic grouping follows room matrix west/east sections, not exact CAD geometry.', rooms:[
-    {name:'Reserved Office 1', no:'222', risk:'Low-Medium', x:64, y:58, w:168, h:82, tags:'office'},
-    {name:'OSD Store', no:'201', risk:'Medium-High', x:252, y:58, w:144, h:82, tags:'store, combustible_load'},
-    {name:'DOC Store', no:'221', risk:'Medium-High', x:416, y:58, w:144, h:82, tags:'document_store, combustible_load'},
-    {name:'AHU', no:'220', risk:'Medium-High', x:580, y:58, w:112, h:82, tags:'ahu, smoke_spread'},
-    {name:'TSD / OCD Office', no:'203', risk:'Low-Medium', x:64, y:330, w:182, h:82, tags:'office'},
-    {name:'Meeting Room', no:'211', risk:'Medium', x:266, y:330, w:146, h:82, tags:'meeting_room, group_occupancy'},
-    {name:'Incident Management Room', no:'219', risk:'High', x:432, y:330, w:184, h:82, tags:'incident_management, command_support'},
-    {name:'System Admin / PTR', no:'207', risk:'High', x:636, y:330, w:170, h:82, tags:'it_support, technical_room'},
-    {name:'Lift Hall', no:'223', risk:'Medium', x:704, y:58, w:66, h:82, tags:'lift_hall, no_lift_fire', node:true},
-    {name:'MST-01', no:'225', risk:'Critical', x:790, y:52, w:58, h:94, tags:'stair, evacuation_core', node:true}
-  ]},
-  '3':{label:'3rd Floor', source:'PDF pages 8-10', caveat:'Room anchors refined from FLOOR PLAN 3.png for the main simulation zones; still verify before official use.', rooms:[
-    {name:'SSD / Reserved / OSD Office', no:'301-303', risk:'Low-Medium', x:48, y:58, w:185, h:112, tags:'office'},
-    {name:'OSD Store', no:'318', risk:'Medium-High', x:132, y:34, w:92, h:70, tags:'store, combustible_load'},
-    {name:'Storage', no:'308', risk:'Medium-High', x:690, y:355, w:142, h:82, tags:'storage, combustible_load'},
-    {name:'AHU', no:'317', risk:'Medium-High', x:245, y:42, w:82, h:64, tags:'ahu, smoke_spread'},
-    {name:'Visitor Gallery', no:'325', risk:'Medium', x:660, y:325, w:160, h:88, tags:'visitor_area, unfamiliar_route'},
-    {name:'UPS Battery Room', no:'312', risk:'Critical', x:540, y:88, w:128, h:82, tags:'battery_room, electrical_hazard, smoke_toxicity'},
-    {name:'Signalling Equipment', no:'311', risk:'High-Critical', x:680, y:88, w:146, h:82, tags:'signalling, critical_system, electrical_hazard'},
-    {name:'ITD Server', no:'307', risk:'High', x:500, y:350, w:118, h:82, tags:'server_room, electrical_hazard'},
-    {name:'AFC CC', no:'306', risk:'High', x:445, y:355, w:84, h:74, tags:'afc, critical_operation'},
-    {name:'N2 Room', no:'323', risk:'High', x:545, y:38, w:82, h:58, tags:'gas_room, technical_hazard'},
-    {name:'Lift Hall', no:'319', risk:'Medium', x:250, y:52, w:78, h:94, tags:'lift_hall, no_lift_fire', node:true},
-    {name:'MST-01 Landing', no:'321/322', risk:'Critical', x:260, y:82, w:86, h:118, tags:'stair, evacuation_core', node:true}
-  ]},
-  '4':{label:'4th Floor', source:'PDF pages 11-13', caveat:'Office and meeting zones are grouped from matrix; exact room adjacency still needs drawing verification.', rooms:[
-    {name:'Safety', no:'421', risk:'Low-Medium', x:64, y:58, w:120, h:82, tags:'safety_office, response_support'},
-    {name:'SFD / SCD Store', no:'419', risk:'Medium-High', x:204, y:58, w:142, h:82, tags:'store, combustible_load'},
-    {name:'AHU', no:'420', risk:'Medium-High', x:366, y:58, w:96, h:82, tags:'ahu, smoke_spread'},
-    {name:'Security / Quality', no:'401', risk:'Low-Medium', x:482, y:58, w:150, h:82, tags:'office'},
-    {name:'HR Recruitment', no:'402', risk:'Low-Medium', x:652, y:58, w:146, h:82, tags:'office, visitor_area'},
-    {name:'Central Files Room', no:'406', risk:'Medium-High', x:64, y:330, w:170, h:82, tags:'file_storage, combustible_load'},
-    {name:'Meeting Room 1 / 2', no:'405/407', risk:'Medium', x:254, y:330, w:180, h:82, tags:'meeting_room, group_occupancy'},
-    {name:'Interview / Exam Rooms', no:'412/411', risk:'Medium', x:454, y:330, w:182, h:82, tags:'visitor_area, group_occupancy'},
-    {name:'EBM Office Zone', no:'404/414', risk:'Low-Medium', x:656, y:330, w:142, h:82, tags:'office'},
-    {name:'Lift Hall', no:'422', risk:'Medium', x:814, y:58, w:48, h:82, tags:'lift_hall, no_lift_fire', node:true},
-    {name:'MST-01', no:'424', risk:'Critical', x:814, y:326, w:48, h:90, tags:'stair, evacuation_core', node:true}
-  ]},
-  '5':{label:'5th Floor', source:'PDF pages 14-16', caveat:'Room anchors refined from FLOOR PLAN 5.png; Station Simulator 506, Training 508, CBI 505 and stores now follow the real drawing footprint.', rooms:[
-    {name:'Training Office 1', no:'501', risk:'Medium', x:54, y:62, w:154, h:118, tags:'training, high_occupancy'},
-    {name:'Training Office 2 / 2.1', no:'502/503', risk:'Medium', x:65, y:318, w:188, h:124, tags:'training, high_occupancy'},
-    {name:'Training Office 3 / Area', no:'504', risk:'Medium', x:260, y:312, w:190, h:128, tags:'training, high_occupancy'},
-    {name:'CBI', no:'505', risk:'Medium', x:470, y:316, w:112, h:114, tags:'training, technical_training'},
-    {name:'Station Simulator', no:'506', risk:'Medium-High', x:655, y:300, w:182, h:135, tags:'simulator, high_occupancy, technical_room'},
-    {name:'Training Room', no:'508', risk:'Medium', x:705, y:68, w:150, h:118, tags:'training_room, high_occupancy'},
-    {name:'DOC Store', no:'516', risk:'Medium-High', x:138, y:50, w:78, h:82, tags:'document_store, combustible_load'},
-    {name:'AHU', no:'515', risk:'Medium-High', x:52, y:38, w:70, h:78, tags:'ahu, smoke_spread'},
-    {name:'Teacher Rest Room', no:'518', risk:'Medium', x:20, y:320, w:76, h:92, tags:'rest_area, delayed_response'},
-    {name:'Lift Hall', no:'519', risk:'Medium', x:372, y:62, w:82, h:104, tags:'lift_hall, no_lift_fire', node:true},
-    {name:'MST-01', no:'521', risk:'Critical', x:220, y:60, w:92, h:126, tags:'stair, evacuation_core', node:true}
-  ]},
-  RF:{label:'ดาดฟ้า', source:'Added operational layer', caveat:'Roof layer is added for rescue/trapped-person demo. It is not present in the 16-page matrix and must be verified from roof plan / site inspection.', rooms:[
-    {name:'Roof Access / MST-01 Head', no:'RF-01', risk:'Critical', x:86, y:76, w:168, h:92, tags:'roof_access, rescue_node, stair_core', node:true},
-    {name:'MEP / Roof Equipment Zone', no:'RF-02', risk:'Medium-High', x:296, y:76, w:210, h:92, tags:'technical_area, restricted_access'},
-    {name:'Smoke Vent / Relief Zone', no:'RF-03', risk:'Medium', x:548, y:76, w:220, h:92, tags:'smoke_control, verify_required'},
-    {name:'External Rescue Staging Edge', no:'RF-04', risk:'High', x:88, y:318, w:250, h:92, tags:'external_fire_service, aerial_ladder'},
-    {name:'Temporary Safe Holding Area', no:'RF-05', risk:'Medium', x:382, y:318, w:250, h:92, tags:'trapped_person, muster_temp'},
-    {name:'No Re-entry Boundary', no:'RF-06', risk:'High', x:676, y:318, w:142, h:92, tags:'restricted_area, guardrail'}
-  ]}
-};
-
-
-const FLOOR_PLAN_IMAGES = {
-  GF:{id:'GF', title:'Ground Floor Small Power System Reference Plan', src:'ข้อมูลแปลนอาคารและแผนผังอพยพ/FLOOR%20PLAN%20G.png', w:1828, h:1300, pages:'1-4', overlay:{x:285,y:338,w:1260,h:500}},
-  '2':{id:'2', title:'2nd Floor Small Power System Reference Plan', src:'ข้อมูลแปลนอาคารและแผนผังอพยพ/FLOOR%20PLAN%202.png', w:1756, h:1312, pages:'5-7', overlay:{x:285,y:320,w:1260,h:430}},
-  '3':{id:'3', title:'3rd Floor Small Power System Reference Plan', src:'ข้อมูลแปลนอาคารและแผนผังอพยพ/FLOOR%20PLAN%203.png', w:1756, h:1298, pages:'8-10', overlay:{x:285,y:318,w:1240,h:430}},
-  '4':{id:'4', title:'4th Floor Small Power System Reference Plan', src:'ข้อมูลแปลนอาคารและแผนผังอพยพ/FLOOR%20PLAN%204.png', w:1756, h:1298, pages:'11-13', overlay:{x:292,y:338,w:1240,h:430}},
-  '5':{id:'5', title:'5th Floor Small Power System Reference Plan', src:'ข้อมูลแปลนอาคารและแผนผังอพยพ/FLOOR%20PLAN%205.png', w:1756, h:1304, pages:'14-16', overlay:{x:292,y:368,w:1240,h:420}}
-};
-const FLOOR_PLAN_IMAGE_CACHE = {};
 
 /* ============================================================
    [v1.4] Vector Floor Plans — วาดใหม่จาก Floor Plan Data Matrix
@@ -1343,28 +1258,117 @@ const OCC_ROLES = [
   ['External Fire Service / Police','ระงับเหตุ ตรวจสอบพื้นที่ เก็บข้อมูลหลักฐาน','External Agency Support']
 ];
 
-/* Floor geometry ใช้ร่วมกันระหว่าง Floor Plan และ Simulation (พิกัด 900x520) */
-const GEO = {
-  rooms:[
-    {id:'offA', name:'สำนักงานโซน A', x:70,  y:55,  w:330, h:150},
-    {id:'offB', name:'สำนักงานโซน B', x:500, y:55,  w:330, h:150},
-    {id:'meet', name:'ห้องประชุมใหญ่', x:70,  y:320, w:250, h:145},
-    {id:'lobby',name:'โถงลิฟต์',      x:380, y:320, w:220, h:145},
-    {id:'svr',  name:'ห้องเซิร์ฟเวอร์', x:660, y:320, w:170, h:145},
-  ],
-  corridor:{x:40, y:230, w:820, h:70},
-  exits:[
-    {id:'W', name:'MST-01 / Main Stair', x:46,  y:265},
-    {id:'E', name:'FST-01 / Fire Escape Stair', x:854, y:265},
-  ],
-  extinguishers:[[110,240],[440,240],[790,240],[240,80],[670,80],[340,440],[700,440]],
-  alarms:[[60,240],[840,240],[460,80]]
+/* ============================================================
+   [v1.10] Building Registry — รองรับหลายอาคาร
+   OCC YL ย้ายข้อมูลเดิมเข้ามาแบบ re-wrap (ค่าเดิมทุกตัวไม่เปลี่ยน)
+   อาคาร B (โรงซ่อมบำรุง) เป็น pilot ข้อมูลตัวอย่าง โครงสร้างเดียวกับ OCC
+   รอแทนที่ด้วยแปลนจริงเมื่อมีเอกสารจากผู้ใช้
+   ============================================================ */
+const BUILDING_B_FLOORS = [
+  {id:'2',  f:2,    label:'ชั้น 2 — Mezzanine', short:'2', occ:20, scenario:true},
+  {id:'GF', f:'GF', label:'Ground Floor', short:'G', occ:45, scenario:true}
+];
+const BUILDING_B_FLOOR_PLANS = {
+  GF:{label:'Ground Floor', source:'อาคาร B — ข้อมูลตัวอย่าง (Placeholder)', caveat:'ยังไม่มีแบบแปลนจริงของอาคาร B — ผังนี้เป็นข้อมูลตัวอย่างเพื่อพิสูจน์ระบบ Building Registry เท่านั้น ต้องแทนที่ด้วยแบบ as-built จริงก่อนใช้งานจริง', rooms:[
+    {name:'Workshop Bay 1', no:'B-101', risk:'High', tags:'hot_work, combustible_load', x:30,y:60,w:150,h:140, occ:10},
+    {name:'Workshop Bay 2', no:'B-102', risk:'High', tags:'hot_work, combustible_load', x:190,y:60,w:150,h:140, occ:10},
+    {name:'Lube/Oil Store', no:'B-103', risk:'Critical', tags:'flammable_liquid, storage', x:350,y:60,w:130,h:140, occ:2},
+    {name:'Battery Charging Room', no:'B-104', risk:'Critical', tags:'battery_room, electrical_hazard', x:490,y:60,w:150,h:140, occ:3},
+    {name:'Tool Store', no:'B-105', risk:'Medium', tags:'storage, combustible_load', x:650,y:60,w:130,h:140, occ:3},
+    {name:'Site Office', no:'B-106', risk:'Low-Medium', tags:'office', x:790,y:60,w:150,h:140, occ:7},
+    {name:'S1 Roller Door', no:'B-S1', risk:'Critical', tags:'exit, evacuation_core, ground_level', node:true, exitNode:true, exitId:'S1', x:30,y:264,w:130,h:140, occ:0},
+    {name:'Main Hall', no:'-', risk:'Medium', tags:'open_area, assembly_zone', x:170,y:264,w:500,h:140, occ:10},
+    {name:'S2 Side Door', no:'B-S2', risk:'Critical', tags:'exit, evacuation_core, ground_level', node:true, exitNode:true, exitId:'S2', x:680,y:264,w:110,h:140, occ:0},
+    {name:'S3 Rear Yard Door', no:'B-S3', risk:'Critical', tags:'exit, evacuation_core, ground_level', node:true, exitNode:true, exitId:'S3', x:800,y:264,w:140,h:140, occ:0}
+  ]},
+  '2':{label:'2nd Floor — Mezzanine', source:'อาคาร B — ข้อมูลตัวอย่าง (Placeholder)', caveat:'ยังไม่มีแบบแปลนจริงของอาคาร B — ผังนี้เป็นข้อมูลตัวอย่างเพื่อพิสูจน์ระบบ Building Registry เท่านั้น ต้องแทนที่ด้วยแบบ as-built จริงก่อนใช้งานจริง', rooms:[
+    {name:'Parts Store', no:'B-201', risk:'Medium-High', tags:'store, combustible_load', x:30,y:60,w:190,h:300, occ:4},
+    {name:'Supervisor Office', no:'B-202', risk:'Low-Medium', tags:'office', x:230,y:60,w:190,h:300, occ:4},
+    {name:'Break Room', no:'B-203', risk:'Medium', tags:'break_room, ignition_source', x:430,y:60,w:190,h:300, occ:6},
+    {name:'Mezzanine Open Area', no:'-', risk:'Low', tags:'open_area', x:630,y:60,w:190,h:300, occ:6},
+    {name:'MST-B1 Stair Down', no:'B-ST1', risk:'Critical', tags:'stair, evacuation_core', node:true, stair:true, exitNode:true, exitId:'ST1', x:830,y:60,w:130,h:300, occ:0}
+  ]}
 };
+const BUILDING_B_FLOOR_EQUIP = {
+  GF:[{t:'ext',x:100,y:90},{t:'hose',x:260,y:90},{t:'ext',x:420,y:90},{t:'ext',x:560,y:90},{t:'hose',x:560,y:130},{t:'alarm',x:420,y:290}],
+  '2':[{t:'ext',x:870,y:90},{t:'alarm',x:520,y:90}]
+};
+const BUILDING_B_FLOOR_ROOM_MATRIX = {
+  GF:[
+    ['Workshop Bay 1','B-101','Placeholder — pending as-built drawing','Fabrication / welding bay','High','hot_work, combustible_load','Hot work ignition source'],
+    ['Workshop Bay 2','B-102','Placeholder — pending as-built drawing','Fabrication / cutting bay','High','hot_work, combustible_load','Hot work ignition source'],
+    ['Lube/Oil Store','B-103','Placeholder — pending as-built drawing','Flammable liquid store','Critical','flammable_liquid, storage','Lubricant/oil fire'],
+    ['Battery Charging Room','B-104','Placeholder — pending as-built drawing','Battery charging bay','Critical','battery_room, electrical_hazard','Battery fire / off-gassing'],
+    ['Tool Store','B-105','Placeholder — pending as-built drawing','Tool storage','Medium','storage, combustible_load','Store fire'],
+    ['Site Office','B-106','Placeholder — pending as-built drawing','Office','Low-Medium','office','Office evacuation'],
+    ['Main Hall','-','Placeholder — pending as-built drawing','Open workshop floor / assembly area','Medium','open_area, assembly_zone','Crowd flow through open hall'],
+    ['S1 Roller Door','B-S1','Placeholder — pending as-built drawing','Ground-level exit / main roller door','Critical','exit, evacuation_core, ground_level','Main evacuation route'],
+    ['S2 Side Door','B-S2','Placeholder — pending as-built drawing','Ground-level exit / personnel door','Critical','exit, evacuation_core, ground_level','Secondary evacuation route'],
+    ['S3 Rear Yard Door','B-S3','Placeholder — pending as-built drawing','Ground-level exit / rear yard door','Critical','exit, evacuation_core, ground_level','Rear evacuation route']
+  ],
+  '2':[
+    ['Parts Store','B-201','Placeholder — pending as-built drawing','Spare parts store','Medium-High','store, combustible_load','Store fire'],
+    ['Supervisor Office','B-202','Placeholder — pending as-built drawing','Office','Low-Medium','office','Office evacuation'],
+    ['Break Room','B-203','Placeholder — pending as-built drawing','Staff break room','Medium','break_room, ignition_source','Pantry-type incident'],
+    ['Mezzanine Open Area','-','Placeholder — pending as-built drawing','Open mezzanine walkway','Low','open_area','General circulation'],
+    ['MST-B1 Stair Down','B-ST1','Placeholder — pending as-built drawing','Stair to Ground Floor exits','Critical','stair, evacuation_core','Main route down to GF exits']
+  ]
+};
+const BUILDINGS_DATA = {
+  'occ-yl':{
+    id:'occ-yl', name:'OCC YL — Operation Control Center', shortName:'OCC YL',
+    floors: FLOORS, floorIds: ['RF','5','4','3','2','GF'],
+    floorPlans: FLOOR_PLANS, floorEquip: FLOOR_EQUIP, floorRoomMatrix: FLOOR_ROOM_MATRIX,
+    exitVocabulary: {ids:['W','E','L'], twoExitRule:true},
+    originOptions: [
+      {value:'svr', label:'ห้องเทคนิค / Simulator ตามชั้น'},
+      {value:'offA', label:'สำนักงานโซน A'},
+      {value:'offB', label:'สำนักงานโซน B'},
+      {value:'meet', label:'ห้องประชุมใหญ่'},
+      {value:'lobby', label:'โถงลิฟต์'}
+    ],
+    originRoomResolver: 'occ',
+    corridorCY: 236,
+    scenarioFloorRange: {min:1, max:5, specialValues:['ดาดฟ้า','Ground']},
+    trappedFloorOptions: ['ดาดฟ้า','ชั้น 5','ชั้น 4','ชั้น 3','ชั้น 2'],
+    drillHistory: DRILLS, drillTimeline: OCC_TIMELINE, drillRoles: OCC_ROLES,
+    passThresholdSec: 300,
+    storageKey: 'aidt_occ_state_v1',
+    defaultFloorId: '3', defaultScenarioFloorId: '5',
+    map: {markerId:'A', fixed:true, offsetFromSiteCenter:{dN:0,dE:0}}
+  },
+  'depot-b':{
+    id:'depot-b', name:'อาคาร B โรงซ่อมบำรุง', shortName:'อาคาร B',
+    floors: BUILDING_B_FLOORS, floorIds: ['2','GF'],
+    floorPlans: BUILDING_B_FLOOR_PLANS, floorEquip: BUILDING_B_FLOOR_EQUIP, floorRoomMatrix: BUILDING_B_FLOOR_ROOM_MATRIX,
+    exitVocabulary: {ids:['S1','S2','S3','ST1'], twoExitRule:false},
+    originOptions: [
+      {value:'hotwork', label:'Workshop Bay (งานเชื่อม-ตัด)'},
+      {value:'lube', label:'Lube/Oil Store'},
+      {value:'battery', label:'Battery Charging Room'},
+      {value:'mezz', label:'ชั้น 2 Mezzanine (Parts Store / Office)'}
+    ],
+    originRoomResolver: 'depot-b',
+    corridorCY: null,
+    scenarioFloorRange: {min:1, max:2, specialValues:['Ground']},
+    trappedFloorOptions: ['ชั้น 2'],
+    drillHistory: [], drillTimeline: null, drillRoles: null,
+    passThresholdSec: 180,
+    storageKey: 'aidt_depot_b_state_v1',
+    defaultFloorId: 'GF', defaultScenarioFloorId: '2',
+    map: {markerId:'B', fixed:false, offsetFromSiteCenter:{dN:25,dE:60}}
+  }
+};
+function activeBuilding(){ return BUILDINGS_DATA[state.activeBuildingId] || BUILDINGS_DATA['occ-yl']; }
 
-
-/* [v1.4] exit nodes derive จากโซนเวกเตอร์ (exitW = MST-01, exitE = FST-01/Rescue Edge) */
+/* [v1.4→v1.10] exit nodes derive จากโซนเวกเตอร์ — OCC: exitW = MST-01, exitE = FST-01/Rescue Edge
+   อาคารอื่นที่ไม่ใช้ระบบ W/E (exitVocabulary.ids[0]!=='W') ใช้ room flag exitNode/exitId แทน */
 function floorExitNodes(sc){
   const plan = scenarioFloorPlan(sc);
+  const bld = activeBuilding();
+  if(bld.exitVocabulary.ids[0] !== 'W'){
+    return plan.rooms.filter(r=>r.exitNode).map(r=>({id:r.exitId, code:r.exitId, name:r.name, x:r.x+r.w/2, y:r.y+r.h-24}));
+  }
   const w = plan.rooms.find(r=>r.exitW) || plan.rooms.find(r=>r.stair);
   const e = plan.rooms.find(r=>r.exitE) || w;
   const nodes = [];
@@ -1429,7 +1433,8 @@ const state = {
   ],
   carNextId: 5,
   verify: {},     // ยืนยันผังต่อชั้นกับแบบแปลนทางการ — เติมค่าเริ่มต้นใน renderVerify()
-  liveDrill: null // ผลการจับเวลาซ้อมจริงล่าสุด (Live Drill Mode)
+  liveDrill: null, // ผลการจับเวลาซ้อมจริงล่าสุด (Live Drill Mode)
+  activeBuildingId: 'occ-yl' // อาคารที่ active อยู่ — UI convenience เท่านั้น ไม่ผ่าน validatePersistedState/export
 };
 
 const $ = s => document.querySelector(s);
@@ -1438,7 +1443,7 @@ const fmtTime = s => Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(
 /* ========================================================= */
 /* Persistence (localStorage + Export/Import JSON)            */
 /* ========================================================= */
-const STORAGE_KEY = 'aidt_occ_state_v1';
+let STORAGE_KEY = 'aidt_occ_state_v1'; // เปลี่ยนได้โดย setActiveBuilding() — ค่าเริ่มต้นคง OCC เดิมไว้เสมอ
 const STATE_KEYS = ['exportedAt','scenarios','nextId','activeScenario','car','carNextId','verify','liveDrill'];
 const SCENARIO_KEYS = [
   'id','name','type','floor','floorLabel','origin','originLabel','time','people',
@@ -1479,7 +1484,7 @@ function validateScenario(sc, index){
   if(!((typeof sc.floor==='number' && Number.isInteger(sc.floor) && sc.floor>=1 && sc.floor<=5)
       || sc.floor==='ดาดฟ้า' || sc.floor==='Ground'))
     stateValidationError(label+'.floor ไม่ถูกต้อง');
-  validEnum(sc.origin,['svr','offA','offB','meet','lobby'],label+'.origin');
+  validEnum(sc.origin,['svr','offA','offB','meet','lobby','hotwork','lube','battery','mezz'],label+'.origin');
   if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(sc.time)) stateValidationError(label+'.time ไม่ถูกต้อง');
   validInt(sc.people,label+'.people',1,250);
   ['blockW','blockE','night'].forEach(k=>validBool(sc[k],label+'.'+k));
@@ -1600,6 +1605,50 @@ function loadState(){
   }
 }
 loadState();
+
+/* ========================================================= */
+/* Active building switching (Building Registry)              */
+/* activeBuildingId เป็น UI convenience เก็บแยก localStorage   */
+/* คนละสล็อตจาก STORAGE_KEY ของแต่ละอาคาร ไม่ผ่าน validatePersistedState */
+/* ========================================================= */
+const ACTIVE_BUILDING_STORAGE_KEY = 'aidt_active_building_v1';
+function resetBuildingScopedState(){
+  state.scenarios = []; state.nextId = 1; state.activeScenario = null;
+  state.car = []; state.carNextId = 1; state.verify = {}; state.liveDrill = null;
+  state.lastSim = null; state.occRun = null;
+}
+function setActiveBuilding(id){
+  if(!BUILDINGS_DATA[id] || id === state.activeBuildingId) return;
+  state.activeBuildingId = id;
+  STORAGE_KEY = activeBuilding().storageKey;
+  try{ localStorage.setItem(ACTIVE_BUILDING_STORAGE_KEY, id); }catch(e){}
+  resetBuildingScopedState();
+  loadState();
+  if(typeof initFloorSelect === 'function') initFloorSelect();
+  if(typeof populateScenarioFormSelectors === 'function') populateScenarioFormSelectors();
+  if(typeof renderDashboard === 'function') renderDashboard();
+  if(typeof renderFloor === 'function'){ selectedFloorRoomIndex = 0; renderFloor(); }
+  if(typeof renderScenarioList === 'function') renderScenarioList();
+  if(typeof renderVerify === 'function') renderVerify();
+  if(typeof renderCAR === 'function') renderCAR();
+  if(typeof renderLiveDrillResult === 'function') renderLiveDrillResult();
+  if(typeof renderDrills === 'function') renderDrills();
+  if(typeof renderOCC === 'function') renderOCC();
+  if(typeof renderOCCRoles === 'function') renderOCCRoles();
+  if(typeof simConfigured !== 'undefined') simConfigured = false;
+  if(typeof updateActiveBuildingChip === 'function') updateActiveBuildingChip();
+  toast('สลับไปยัง ' + activeBuilding().name + ' แล้ว');
+}
+function updateActiveBuildingChip(){
+  const el = $('#active-building-chip');
+  if(el) el.textContent = 'อาคารที่ใช้งาน: ' + activeBuilding().shortName;
+}
+function restoreActiveBuildingFromStorage(){
+  let saved = null;
+  try{ saved = localStorage.getItem(ACTIVE_BUILDING_STORAGE_KEY); }catch(e){}
+  if(saved && BUILDINGS_DATA[saved] && saved !== state.activeBuildingId) setActiveBuilding(saved);
+  else if(typeof updateActiveBuildingChip === 'function') updateActiveBuildingChip();
+}
 
 /* ========================================================= */
 /* Auth — login ตามบทบาท (session token จาก /api/login)      */
@@ -1788,24 +1837,32 @@ document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>
 /* ========================================================= */
 /* Dashboard                                                  */
 /* ========================================================= */
-(function renderDashboard(){
-  const max = Math.max(...FLOORS.map(f=>f.occ));
-  $('#floor-bars').innerHTML = FLOORS.map(f=>`
+function renderDashboard(){
+  const bld = activeBuilding();
+  const floors = bld.floors;
+  const max = Math.max(...floors.map(f=>f.occ));
+  $('#floor-bars').innerHTML = floors.map(f=>`
     <div class="bar-row">
       <span class="lb">${f.short}</span>
       <div class="track"><div class="fill" style="width:${(f.occ/max*100).toFixed(0)}%"></div></div>
       <span class="num">${f.occ} คน</span>
     </div>`).join('');
-})();
+  const nameEl = $('#dash-building-name');
+  if(nameEl) nameEl.textContent = bld.name;
+}
+renderDashboard();
 
 /* ========================================================= */
 /* Building Map                                               */
 /* ========================================================= */
+const BLD_KEY_TO_BUILDING_ID = {A:'occ-yl', B:'depot-b'}; // C (สถานีไฟฟ้าย่อย) ไม่มี building registry entry — คลิกดูข้อมูลได้อย่างเดียว
 document.querySelectorAll('.bld').forEach(g=>{
   g.addEventListener('click',()=>{
     const b = BUILDINGS[g.dataset.bld];
     $('#bld-title').textContent = b.name;
     $('#bld-info').innerHTML = b.rows.map(r=>`<div class="row"><span class="k">${r[0]}</span><span style="text-align:right">${r[1]}</span></div>`).join('');
+    const buildingId = BLD_KEY_TO_BUILDING_ID[g.dataset.bld];
+    if(buildingId) setActiveBuilding(buildingId);
   });
 });
 
@@ -1911,6 +1968,8 @@ function initGoogleMap(center){
         const b = BUILDINGS[m.bldKey];
         $('#bld-title').textContent = b.name;
         $('#bld-info').innerHTML = b.rows.map(r=>`<div class="row"><span class="k">${r[0]}</span><span style="text-align:right">${r[1]}</span></div>`).join('');
+        const buildingId = BLD_KEY_TO_BUILDING_ID[m.bldKey];
+        if(buildingId) setActiveBuilding(buildingId);
       }
     });
     if(!m.fixed) marker.addListener('dragend', ()=>{ saveCustomGmapPosition(m.id, marker.getPosition()); toast(`บันทึกตำแหน่ง ${m.name} แล้ว`); updateGmapPositionsStatus(); });
@@ -1955,21 +2014,36 @@ function renderBuildingMap(){
 /* ========================================================= */
 /* Floor Plan                                                 */
 /* ========================================================= */
-(function initFloorSelect(){
+function initFloorSelect(){
   const sel = $('#floor-select'), sc = $('#sc-floor');
-  FLOORS.forEach(fl=>{
+  sel.innerHTML = ''; sc.innerHTML = '';
+  const bld = activeBuilding();
+  bld.floors.forEach(fl=>{
     sel.insertAdjacentHTML('beforeend', `<option value="${fl.id}">${fl.label}</option>`);
-    if(fl.scenario) sc.insertAdjacentHTML('beforeend', `<option value="${fl.id}" ${fl.id==='5'?'selected':''}>${fl.label}</option>`);
+    if(fl.scenario) sc.insertAdjacentHTML('beforeend', `<option value="${fl.id}" ${fl.id===bld.defaultScenarioFloorId?'selected':''}>${fl.label}</option>`);
   });
-  sel.value = '3';
-})();
+  sel.value = bld.defaultFloorId;
+}
+initFloorSelect();
+function populateScenarioFormSelectors(){
+  const originSel = $('#sc-origin'), trappedSel = $('#sc-trapped-floor');
+  const bld = activeBuilding();
+  if(originSel){
+    originSel.innerHTML = bld.originOptions.map(o=>`<option value="${o.value}">${esc(o.label)}</option>`).join('');
+  }
+  if(trappedSel){
+    trappedSel.innerHTML = bld.trappedFloorOptions.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  }
+}
+populateScenarioFormSelectors();
 
 function seededRand(seed){ return ()=> (seed = (seed*9301+49297)%233280)/233280; }
 function floorMeta(id){
   const key = String(id);
-  if(key==='Ground' || key==='Ground Floor') return FLOORS.find(x=>x.id==='GF');
-  if(key==='ดาดฟ้า' || key==='Roof') return FLOORS.find(x=>x.id==='RF');
-  return FLOORS.find(x=>x.id===key) || FLOORS.find(x=>String(x.f)===key) || FLOORS[1];
+  const floors = activeBuilding().floors;
+  if(key==='Ground' || key==='Ground Floor') return floors.find(x=>x.id==='GF') || floors[floors.length-1];
+  if(key==='ดาดฟ้า' || key==='Roof') return floors.find(x=>x.id==='RF') || floors[0];
+  return floors.find(x=>x.id===key) || floors.find(x=>String(x.f)===key) || floors[1] || floors[0];
 }
 function floorDisplay(v){
   if(v==='ดาดฟ้า' || v==='RF') return 'ดาดฟ้า';
@@ -1991,45 +2065,11 @@ function riskColor(risk){
   if(risk==='Medium') return '#4da3ff';
   return '#2ecc71';
 }
-function svgRoomLabel(room){
-  const name = room.name.length > 22 ? room.name.slice(0,21) + '…' : room.name;
-  return `<text x="${room.x+room.w/2}" y="${room.y+24}" fill="#e8edf6" font-size="11.5" font-weight="700" text-anchor="middle">${name}</text>
-          <text x="${room.x+room.w/2}" y="${room.y+42}" fill="#8b98b0" font-size="10.5" text-anchor="middle">Room ${room.no} · ${room.risk}</text>`;
-}
 function riskBadge(risk){
   const cls = risk.includes('Critical') || risk==='High' ? 'red' : risk==='Medium-High' ? 'yellow' : risk==='Medium' ? 'blue' : 'green';
   return `<span class="chip ${cls}">${risk}</span>`;
 }
 
-function floorImageMeta(id){
-  const meta = floorMeta(id);
-  return FLOOR_PLAN_IMAGES[meta.id] || null;
-}
-function getFloorPlanImage(id){
-  const meta = floorImageMeta(id);
-  if(!meta) return null;
-  if(!FLOOR_PLAN_IMAGE_CACHE[meta.id]){
-    const img = new Image();
-    img.onload = ()=>{ try{ renderFloor(); simDraw(); }catch(e){} };
-    img.src = meta.src;
-    FLOOR_PLAN_IMAGE_CACHE[meta.id] = img;
-  }
-  return FLOOR_PLAN_IMAGE_CACHE[meta.id];
-}
-function roomBox(room, imgMeta){
-  if(!imgMeta) return {x:room.x, y:room.y, w:room.w, h:room.h};
-  const o = imgMeta.overlay;
-  return {
-    x:o.x + room.x/900*o.w,
-    y:o.y + room.y/520*o.h,
-    w:room.w/900*o.w,
-    h:room.h/520*o.h
-  };
-}
-function roomPoint(room, imgMeta){
-  const b = roomBox(room, imgMeta);
-  return {x:b.x+b.w/2, y:b.y+b.h/2};
-}
 function esc(v){
   return String(v ?? '').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -2047,17 +2087,27 @@ function roomGuidance(row){
   return risk.includes('High') || risk.includes('Critical') ? 'High-risk support zone: ใช้เป็น scenario location หรือ risk marker ใน AAR' : 'General occupancy zone: ใช้สำหรับ headcount, evacuation load และ floor sweep';
 }
 function scenarioFloorId(sc){
-  return floorMeta(sc ? sc.floor : '5').id;
+  const bld = activeBuilding();
+  return floorMeta(sc ? sc.floor : bld.defaultScenarioFloorId).id;
 }
 function scenarioFloorPlan(sc){
+  const bld = activeBuilding();
   const id = scenarioFloorId(sc);
-  return FLOOR_PLANS[id] || FLOOR_PLANS['5'];
+  return bld.floorPlans[id] || bld.floorPlans[bld.floorIds[0]];
 }
 function scenarioOriginRoom(sc){
+  const bld = activeBuilding();
   const plan = scenarioFloorPlan(sc);
   const rooms = plan.rooms || [];
+  const origin = sc ? sc.origin : bld.originOptions[0].value;
+  if(bld.originRoomResolver === 'depot-b'){
+    if(origin==='hotwork') return rooms.find(r=>/Workshop Bay 1/i.test(r.name)) || rooms.find(r=>/hot_work/.test(r.tags)) || rooms[0];
+    if(origin==='lube') return rooms.find(r=>/Lube\/Oil Store/i.test(r.name)) || rooms[0];
+    if(origin==='battery') return rooms.find(r=>/Battery Charging Room/i.test(r.name)) || rooms[0];
+    if(origin==='mezz') return rooms.find(r=>/Supervisor Office|Parts Store/i.test(r.name)) || rooms[0];
+    return rooms[0];
+  }
   const label = String((sc && sc.originLabel) || '').toLowerCase();
-  const origin = sc ? sc.origin : 'svr';
   // ห้องเก็บของ 3-19 ตามแผนซ้อม = OSD Store (318) ข้างบันไดหลัก MST-01 (เลขห้องแผนซ้อม/CAD ไม่สอดคล้อง — ดูหมายเหตุหน้า OCC)
   if(label.includes('เก็บ') || label.includes('storage')) return rooms.find(r=>/OSD Store/i.test(r.name)) || rooms.find(r=>r.name==='Storage') || rooms.find(r=>/store|storage/i.test(r.name)) || rooms[0];
   if(origin==='lobby') return rooms.find(r=>/Lift Hall|Information|Lobby/i.test(r.name)) || rooms[0];
@@ -2065,10 +2115,10 @@ function scenarioOriginRoom(sc){
   if(origin==='offA') return rooms.find(r=>/Office|Safety|Training Office/i.test(r.name)) || rooms[0];
   if(origin==='offB') return rooms.slice().reverse().find(r=>/Office|Admin|Quality|EBM/i.test(r.name)) || rooms[0];
   if(origin==='svr'){
-    if(plan===FLOOR_PLANS['5']) return rooms.find(r=>/Station Simulator|Training Room/i.test(r.name)) || rooms[0];
-    if(plan===FLOOR_PLANS['4']) return rooms.find(r=>/Central Files|Store/i.test(r.name)) || rooms[0];
-    if(plan===FLOOR_PLANS['3']) return rooms.find(r=>/ITD Server|Signalling|UPS Battery|Store/i.test(r.name)) || rooms[0];
-    if(plan===FLOOR_PLANS['2']) return rooms.find(r=>/System Admin|PTR|DOC Store/i.test(r.name)) || rooms[0];
+    if(plan===bld.floorPlans['5']) return rooms.find(r=>/Station Simulator|Training Room/i.test(r.name)) || rooms[0];
+    if(plan===bld.floorPlans['4']) return rooms.find(r=>/Central Files|Store/i.test(r.name)) || rooms[0];
+    if(plan===bld.floorPlans['3']) return rooms.find(r=>/ITD Server|Signalling|UPS Battery|Store/i.test(r.name)) || rooms[0];
+    if(plan===bld.floorPlans['2']) return rooms.find(r=>/System Admin|PTR|DOC Store/i.test(r.name)) || rooms[0];
     return rooms.find(r=>/Control Room|Storage|N2/i.test(r.name)) || rooms[0];
   }
   return rooms[0];
@@ -2105,127 +2155,11 @@ function selectFloorRoom(i){
   selectedFloorRoomIndex = i;
   renderFloor();
 }
-function drawFloorPlanBackground(ctx, floorId, w, h){
-  const meta = floorImageMeta(floorId);
-  const img = getFloorPlanImage(floorId);
-  if(meta && img && img.complete && img.naturalWidth){
-    const c = meta.overlay;
-    ctx.fillStyle = '#f7f7f4';
-    ctx.fillRect(0,0,w,h);
-    ctx.drawImage(img, c.x, c.y, c.w, c.h, 0, 0, w, h);
-    ctx.fillStyle = 'rgba(10,16,26,.08)';
-    ctx.fillRect(0,0,w,h);
-    return true;
-  }
-  return false;
-}
-
 let selectedFloorRoomIndex = 0;
 
-function renderFloor(){
-  const floorId = $('#floor-select').value;
-  const meta = floorMeta(floorId);
-  const plan = FLOOR_PLANS[meta.id] || FLOOR_PLANS['3'];
-  const imgMeta = floorImageMeta(meta.id);
-  const occ = meta.occ;
-  $('#floor-occ-chip').textContent = `${plan.label} · ${occ} คน (จำลอง)`;
-  const showRoute = $('#ly-route').checked, showEq = $('#ly-equip').checked, showPp = $('#ly-people').checked;
-  const svg = $('#floor-svg');
-  const vw = imgMeta ? imgMeta.w : 900, vh = imgMeta ? imgMeta.h : 520;
-  svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
-  let s = imgMeta
-    ? `<rect width="${vw}" height="${vh}" fill="#f7f7f4"/><image href="${imgMeta.src}" x="0" y="0" width="${vw}" height="${vh}" preserveAspectRatio="xMidYMid meet"/>`
-    : `<rect width="900" height="520" fill="#0a101a"/>`;
-
-  if(!imgMeta){
-    s += `<rect x="42" y="38" width="816" height="420" fill="#111a2b" stroke="#33405e" stroke-width="2" rx="10"/>
-          <text x="60" y="28" fill="#e8edf6" font-size="15" font-weight="700">${plan.label} · OCC YL</text>
-          <text x="840" y="28" fill="#8b98b0" font-size="11" text-anchor="end">${plan.source}</text>
-          <rect x="48" y="220" width="804" height="76" fill="#131c2c" stroke="#243049" stroke-width="1"/>
-          <text x="450" y="263" fill="#65738f" font-size="12" text-anchor="middle">Main corridor / circulation zone (operational layer)</text>`;
-  } else {
-    const o = imgMeta.overlay;
-    s += `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="none" stroke="#ff7a1a" stroke-width="3" stroke-dasharray="12 10" opacity=".75"/>
-          <rect x="${o.x}" y="${Math.max(8,o.y-34)}" width="${Math.min(560,o.w)}" height="26" rx="6" fill="rgba(10,16,26,.72)"/>
-          <text x="${o.x+12}" y="${Math.max(26,o.y-16)}" fill="#e8edf6" font-size="14" font-weight="700">${plan.label} · real floor plan background</text>`;
-  }
-
-  if(showRoute){
-    const nodes = plan.rooms.filter(r=>r.node);
-    const corridorY = imgMeta ? imgMeta.overlay.y + imgMeta.overlay.h*.50 : 258;
-    const corridorX = imgMeta ? imgMeta.overlay.x + imgMeta.overlay.w*.50 : 450;
-    s += `<g stroke="#2ecc71" stroke-width="${imgMeta?5:2.5}" stroke-dasharray="${imgMeta?'18 12':'10 7'}" fill="none" opacity=".92">`;
-    nodes.forEach(n=>{
-      const p = roomPoint(n, imgMeta);
-      s += `<path d="M${p.x.toFixed(1)} ${p.y.toFixed(1)} L${p.x.toFixed(1)} ${corridorY.toFixed(1)} L${corridorX.toFixed(1)} ${corridorY.toFixed(1)}"/>`;
-    });
-    s += `</g>`;
-  }
-
-  plan.rooms.forEach((room,i)=>{
-    const col = riskColor(room.risk);
-    const b = roomBox(room, imgMeta);
-    const p = roomPoint(room, imgMeta);
-    const selected = i===selectedFloorRoomIndex;
-    if(imgMeta){
-      const showRisk = showEq && (String(room.risk).includes('High') || String(room.risk).includes('Critical') || room.node);
-      const r = selected ? 14 : showRisk ? 10 : 7;
-      s += `<g onclick="selectFloorRoom(${i})" style="cursor:pointer">
-              <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+6}" fill="rgba(10,16,26,.35)" stroke="${selected?'#ff7a1a':showRisk?col:'#4da3ff'}" stroke-width="${selected?5:3}"/>
-              <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${selected?'#ff7a1a':showRisk?col:'#4da3ff'}" opacity=".95"/>
-              <text x="${(p.x+16).toFixed(1)}" y="${(p.y-10).toFixed(1)}" fill="${selected?'#ffb04d':'#101623'}" stroke="rgba(255,255,255,.86)" stroke-width="5" paint-order="stroke" font-size="${selected?18:14}" font-weight="800">${esc(room.no)}</text>
-              <title>${esc(room.name)} · Room ${esc(room.no)} · ${esc(room.risk)}</title>
-            </g>`;
-    } else {
-      const fill = showEq ? `${col}28` : '#1a2438';
-      const stroke = room.node ? '#2ecc71' : showEq ? col : '#33405e';
-      s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${fill}" stroke="${selected?'#ff7a1a':stroke}" stroke-width="${selected?3:room.node?2.5:1.7}" rx="6" onclick="selectFloorRoom(${i})" style="cursor:pointer"/>
-            ${svgRoomLabel(room)}`;
-      if(showEq && ['Critical','High-Critical','High'].includes(room.risk)){
-        s += `<circle cx="${b.x+b.w-14}" cy="${b.y+14}" r="6" fill="${col}"/>`;
-      }
-    }
-  });
-
-  if(showPp){
-    const seedBase = meta.id==='RF' ? 607 : meta.id==='GF' ? 101 : Number(meta.f)*77+13;
-    const rnd = seededRand(seedBase);
-    const peopleRooms = plan.rooms.filter(r=>!r.node && !r.tags.includes('restricted_area'));
-    for(let i=0;i<occ;i++){
-      const r = peopleRooms[Math.floor(rnd()*peopleRooms.length)] || plan.rooms[0];
-      const b = roomBox(r, imgMeta);
-      const x = b.x+Math.max(6,b.w*.08)+rnd()*Math.max(8,b.w*.84);
-      const y = b.y+Math.max(8,b.h*.25)+rnd()*Math.max(8,b.h*.55);
-      s += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${imgMeta?7:4}" fill="#4da3ff" opacity=".75"/>`;
-    }
-  }
-
-  const footerY = vh - 22;
-  s += `<rect x="0" y="${vh-58}" width="${vw}" height="58" fill="rgba(10,16,26,.76)"/>
-        <text x="24" y="${vh-34}" fill="#ffc93c" font-size="${imgMeta?18:11}">Caveat: ${plan.caveat}</text>
-        <text x="${vw/2}" y="${footerY}" fill="#c9d3e6" font-size="${imgMeta?16:11}" text-anchor="middle">${plan.label} OCC YL · real drawing + simulation overlay · not official fire-protection verification</text>`;
-  svg.innerHTML = s;
-  $('#floor-caveat').textContent = imgMeta
-    ? `${imgMeta.title} (${imgMeta.src}) · ${plan.source}: ${plan.caveat}`
-    : `${plan.source}: ${plan.caveat}`;
-  const matrix = FLOOR_ROOM_MATRIX[meta.id] || [];
-  $('#floor-room-count').textContent = `${matrix.length} zones`;
-  renderFloorRoomDetail(meta, plan, matrix);
-  renderFloorLayerNote(meta, plan, imgMeta, matrix);
-  $('#floor-room-table').innerHTML = matrix.map((r,i)=>`
-    <tr class="room-row ${i===selectedFloorRoomIndex?'room-selected':''}" onclick="selectFloorRoom(${i})">
-      <td>${esc(r[0])}</td>
-      <td>${esc(r[1])}</td>
-      <td>${esc(r[2])}</td>
-      <td>${esc(r[3])}</td>
-      <td>${riskBadge(r[4])}</td>
-      <td>${esc(r[5])}</td>
-      <td>${esc(r[6])}</td>
-    </tr>`).join('');
-}
 /* ============================================================
-   [v1.4] renderFloor — Vector Floor Plan (override เวอร์ชัน PNG ด้านบน)
-   วาดผังเวกเตอร์ทั้งหมดด้วย SVG จาก FLOOR_PLANS ไม่ใช้ภาพแบบอาคาร
+   [v1.4] renderFloor — Vector Floor Plan วาดผังเวกเตอร์ทั้งหมดด้วย
+   SVG จาก activeBuilding().floorPlans ไม่ใช้ภาพแบบอาคาร
    ============================================================ */
 function zoneIconTxt(z){
   const t = String(z.tags||'');
@@ -2250,9 +2184,10 @@ function matrixIndexForZone(matrix, zone){
   return i;
 }
 function vfZoneClick(floorKey, zi){
-  const plan = FLOOR_PLANS[floorKey];
+  const bld = activeBuilding();
+  const plan = bld.floorPlans[floorKey];
   const zone = plan.rooms[zi];
-  const matrix = FLOOR_ROOM_MATRIX[floorKey] || [];
+  const matrix = bld.floorRoomMatrix[floorKey] || [];
   const mi = matrixIndexForZone(matrix, zone);
   window._vfSelectedZone = {floorKey, zi};
   if(mi>=0){ selectedFloorRoomIndex = mi; renderFloor(); }
@@ -2269,9 +2204,10 @@ function vfZoneClick(floorKey, zi){
   }
 }
 function renderFloor(){
+  const bld = activeBuilding();
   const floorId = $('#floor-select').value;
   const meta = floorMeta(floorId);
-  const plan = FLOOR_PLANS[meta.id] || FLOOR_PLANS['3'];
+  const plan = bld.floorPlans[meta.id] || bld.floorPlans[bld.floorIds[0]];
   const occ = meta.occ;
   $('#floor-occ-chip').textContent = `${plan.label} · ${occ} คน (จำลอง)`;
   const showRoute = $('#ly-route').checked, showRisk = $('#ly-equip').checked, showPp = $('#ly-people').checked;
@@ -2303,23 +2239,37 @@ function renderFloor(){
     s += `<title>${esc(z.name)} · ${esc(z.risk)}</title></g>`;
   });
 
-  // เส้นทางอพยพ → MST-01 (ตะวันตก) และ FST-01 (ตะวันออก)
+  // เส้นทางอพยพ
   if(showRoute){
-    const corr = plan.rooms.find(z=>String(z.tags).includes('corridor'));
     const exits = floorExitNodes({floor: meta.id==='GF'?'Ground':meta.id==='RF'?'ดาดฟ้า':Number(meta.f)});
-    if(corr && exits.length){
-      const cy = corr.y+corr.h/2;
-      const w = exits.find(e=>e.id==='W'), e2 = exits.find(e=>e.id==='E');
-      if(w && e2){
-        const mid = (w.x+e2.x)/2;
-        s += `<path d="M${mid} ${cy} L${w.x} ${cy}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>
-              <path d="M${corr.x+16} ${cy} L${w.x} ${cy}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>
-              <path d="M${mid} ${cy} L${e2.x} ${cy}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>`;
+    if(bld.corridorCY != null){
+      // OCC — ผ่านทางเดินหลัก MST-01 (ตะวันตก) / FST-01 (ตะวันออก) / Lobby
+      const corr = plan.rooms.find(z=>String(z.tags).includes('corridor'));
+      if(corr && exits.length){
+        const cy = corr.y+corr.h/2;
+        const w = exits.find(e=>e.id==='W'), e2 = exits.find(e=>e.id==='E');
+        if(w && e2){
+          const mid = (w.x+e2.x)/2;
+          s += `<path d="M${mid} ${cy} L${w.x} ${cy}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>
+                <path d="M${corr.x+16} ${cy} L${w.x} ${cy}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>
+                <path d="M${mid} ${cy} L${e2.x} ${cy}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>`;
+          exits.forEach(ex=>{
+            s += `<path d="M${ex.x} ${cy} L${ex.x} ${ex.y}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".95"/>
+                  <circle cx="${ex.x}" cy="${ex.y}" r="10" fill="#16a34a"/>
+                  <text x="${ex.x}" y="${ex.y+3.5}" fill="#fff" font-size="8.5" font-weight="800" text-anchor="middle">EXIT</text>`;
+            if(ex.id==='L') s += `<text x="${ex.x}" y="${ex.y+24}" fill="#16a34a" font-size="10" font-weight="700" text-anchor="middle">→ จุดรวมพลภายนอก</text>`;
+          });
+        }
+      }
+    } else {
+      // อาคารที่ไม่มี corridor เดี่ยว (เช่น อาคาร B) — เส้นทางตรงจากพื้นที่เปิดไปยังทางออกแต่ละจุด
+      const hub = plan.rooms.find(z=>String(z.tags).includes('open_area')) || plan.rooms.find(z=>!z.node);
+      if(hub && exits.length){
+        const hx = hub.x+hub.w/2, hy = hub.y+hub.h/2;
         exits.forEach(ex=>{
-          s += `<path d="M${ex.x} ${cy} L${ex.x} ${ex.y}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".95"/>
+          s += `<path d="M${hx} ${hy} L${ex.x} ${ex.y}" stroke="#16a34a" stroke-width="5" fill="none" opacity=".85" stroke-dasharray="20 10"/>
                 <circle cx="${ex.x}" cy="${ex.y}" r="10" fill="#16a34a"/>
                 <text x="${ex.x}" y="${ex.y+3.5}" fill="#fff" font-size="8.5" font-weight="800" text-anchor="middle">EXIT</text>`;
-          if(ex.id==='L') s += `<text x="${ex.x}" y="${ex.y+24}" fill="#16a34a" font-size="10" font-weight="700" text-anchor="middle">→ จุดรวมพลภายนอก</text>`;
         });
       }
     }
@@ -2342,15 +2292,15 @@ function renderFloor(){
 
   // อุปกรณ์ป้องกันและระงับอัคคีภัย (จากแผนผังอพยพทางการ)
   if($('#ly-fire').checked){
-    (FLOOR_EQUIP[meta.id]||[]).forEach(e=>{ s += equipMarkerSVG(e); });
+    (bld.floorEquip[meta.id]||[]).forEach(e=>{ s += equipMarkerSVG(e); });
   }
 
   s += `<rect x="0" y="440" width="1000" height="30" fill="rgba(30,58,95,.85)"/>
-        <text x="500" y="459" fill="#dbe5f0" font-size="11" text-anchor="middle">${plan.label} OCC YL · vector schematic วาดใหม่จาก Data Matrix · อุปกรณ์ดับเพลิงอ้างอิง EVACUATION PLAN OCC YL · ${VECTOR_CAVEAT}</text>`;
+        <text x="500" y="459" fill="#dbe5f0" font-size="11" text-anchor="middle">${plan.label} ${esc(bld.shortName)} · vector schematic วาดใหม่จาก Data Matrix · อุปกรณ์ดับเพลิงอ้างอิงแผนผังอพยพ · ${VECTOR_CAVEAT}</text>`;
   svg.innerHTML = s;
 
-  $('#floor-caveat').textContent = `${plan.source}: ${plan.caveat} · ตำแหน่งอุปกรณ์ดับเพลิง (F/H/A) อ้างอิง EVACUATION PLAN OCC YL — ตำแหน่งโดยประมาณบน schematic`;
-  const matrix = FLOOR_ROOM_MATRIX[meta.id] || [];
+  $('#floor-caveat').textContent = `${plan.source}: ${plan.caveat} · ตำแหน่งอุปกรณ์ดับเพลิง (F/H/A) อ้างอิงแผนผังอพยพ — ตำแหน่งโดยประมาณบน schematic`;
+  const matrix = bld.floorRoomMatrix[meta.id] || [];
   $('#floor-room-count').textContent = `${matrix.length} zones`;
   renderFloorRoomDetail(meta, plan, matrix);
   renderFloorLayerNote(meta, plan, null, matrix);
@@ -2364,7 +2314,7 @@ renderFloor();
 
 function renderVerify(){
   const d = canUse('verifyWrite') ? '' : 'disabled';
-  $('#verify-table').innerHTML = FLOORS.map(f=>{
+  $('#verify-table').innerHTML = activeBuilding().floors.map(f=>{
     const v = state.verify[f.id] || (state.verify[f.id] = {checked:false, by:'', date:'', note:''});
     return `<tr>
       <td>${f.label}</td>
@@ -2443,9 +2393,7 @@ function getActiveScenario(){
 function scOriginName(sc){
   if(sc.originLabel) return sc.originLabel;
   const room = scenarioOriginRoom(sc);
-  if(room) return room.name;
-  const geo = GEO.rooms.find(r=>r.id===sc.origin);
-  return geo ? geo.name : 'พื้นที่เกิดเหตุ';
+  return room ? room.name : 'พื้นที่เกิดเหตุ';
 }
 function scDesc(sc){
   const parts = [`${sc.type} · ${sc.floorLabel || floorDisplay(sc.floor)} · ${scOriginName(sc)} · ${sc.time} น. · ${sc.people} คน`];
@@ -2543,7 +2491,7 @@ function simReset(){
   const simRooms = (simPlan.rooms || []).filter(r=>!r.node && !String(r.tags||'').includes('restricted_area') && !String(r.tags||'').includes('corridor'));
   SIM.agents = [];
   for(let i=0;i<people;i++){
-    const r = simRooms[Math.floor(rnd()*simRooms.length)] || GEO.rooms[Math.floor(rnd()*GEO.rooms.length)];
+    const r = simRooms[Math.floor(rnd()*simRooms.length)] || simPlan.rooms[0];
     SIM.agents.push({
       x: r.x+Math.max(10,r.w*.08)+rnd()*Math.max(12,r.w*.84),
       y: r.y+Math.max(16,r.h*.25)+rnd()*Math.max(16,r.h*.58),
@@ -2598,6 +2546,8 @@ function simReset(){
     SIM.pending.sort((a,b)=>a.at-b.at);
   }
   simConfigured = true;
+  const targetEl = $('#st-target');
+  if(targetEl) targetEl.textContent = fmtTime(activeBuilding().passThresholdSec);
   simDraw(); simStats();
 }
 
@@ -2625,7 +2575,7 @@ function simLoop(ts){
   SIM.t += dt;
 
   SIM.exits.forEach(e=> e.cooldown = Math.max(0, e.cooldown-dt));
-  const CY = 236;   // กึ่งกลางทางเดินผังเวกเตอร์ (y 208-264)
+  const CY = activeBuilding().corridorCY;   // กึ่งกลางทางเดินผังเวกเตอร์ (y 208-264) — null = อาคารไม่มี corridor เดี่ยว (เช่น อาคาร B)
   let queueNow = 0;
 
   // จ่ายเหตุการณ์ตามกำหนดเวลา (OCC Event Log)
@@ -2644,22 +2594,38 @@ function simLoop(ts){
     if(a.exit.blocked) a.exit = nearestExit(a);
     const step = a.speed*dt;
     const dx = a.exit.x - a.x;
-    // รูปแบบแรก: คนรวมตัวเข้าทางเดินหลักก่อน แล้วไปยังบันไดจริงของชั้นนั้น
-    if(Math.abs(dx) > 16){
-      if(Math.abs(a.y-CY) > 4){
-        a.y += Math.sign(CY-a.y)*Math.min(step, Math.abs(CY-a.y));
-        return;
+    if(CY != null){
+      // OCC — คนรวมตัวเข้าทางเดินหลักก่อน แล้วไปยังบันไดจริงของชั้นนั้น
+      if(Math.abs(dx) > 16){
+        if(Math.abs(a.y-CY) > 4){
+          a.y += Math.sign(CY-a.y)*Math.min(step, Math.abs(CY-a.y));
+          return;
+        }
+        a.x += Math.sign(dx)*Math.min(step, Math.abs(dx));
+        a.y = CY + Math.sin(a.x*0.15)*6;   // แกว่งเล็กน้อยให้ดูเป็นธรรมชาติ
+      }else if(Math.abs(a.y-a.exit.y) > 10){
+        a.y += Math.sign(a.exit.y-a.y)*Math.min(step, Math.abs(a.exit.y-a.y));
+      }else{
+        // ถึงหน้าบันไดตามแบบ รอผ่านประตูตามความจุ
+        queueNow++;
+        if(a.exit.cooldown<=0){
+          a.state='out'; a.exit.count++; SIM.evacuated++;
+          a.exit.cooldown = 1/SIM.exitRate;
+        }
       }
-      a.x += Math.sign(dx)*Math.min(step, Math.abs(dx));
-      a.y = CY + Math.sin(a.x*0.15)*6;   // แกว่งเล็กน้อยให้ดูเป็นธรรมชาติ
-    }else if(Math.abs(a.y-a.exit.y) > 10){
-      a.y += Math.sign(a.exit.y-a.y)*Math.min(step, Math.abs(a.exit.y-a.y));
-    }else{
-      // ถึงหน้าบันไดตามแบบ รอผ่านประตูตามความจุ
-      queueNow++;
-      if(a.exit.cooldown<=0){
-        a.state='out'; a.exit.count++; SIM.evacuated++;
-        a.exit.cooldown = 1/SIM.exitRate;
+    } else {
+      // อาคารไม่มี corridor เดี่ยว (เช่น อาคาร B) — เดินตรงเข้าทางออกแนวทแยง
+      const dy = a.exit.y - a.y;
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6){
+        const dist = Math.hypot(dx,dy) || 1;
+        a.x += (dx/dist)*Math.min(step, Math.abs(dx));
+        a.y += (dy/dist)*Math.min(step, Math.abs(dy));
+      } else {
+        queueNow++;
+        if(a.exit.cooldown<=0){
+          a.state='out'; a.exit.count++; SIM.evacuated++;
+          a.exit.cooldown = 1/SIM.exitRate;
+        }
       }
     }
   });
@@ -2712,7 +2678,7 @@ function finishSim(){
   const sc = getActiveScenario();
   const evacSec = Math.round(SIM.evacCompleteAt !== null ? SIM.evacCompleteAt : SIM.t);
   const missionSec = Math.round(SIM.t);
-  const pass = evacSec <= 300;
+  const pass = evacSec <= activeBuilding().passThresholdSec;
   // KPI: ช่วงก่อน GA เป็นค่าจำลอง deterministic ตามแผนนาที 0-3 · หลัง GA วัดจากผลจริง
   const rk = seededRand((sc ? sc.id : 9)*31 + 7);
   const kpi = {
@@ -2729,7 +2695,7 @@ function finishSim(){
     total: SIM.agents.length,
     exits: SIM.exits.map(e=>({id:e.id, name:e.name, count:e.count, blocked:e.blocked})),
     maxQueue: SIM.maxQueue,
-    pass,
+    pass, passThresholdSec: activeBuilding().passThresholdSec,
     occ: !!(sc && sc.occ),
     advanced: scAdvanced(sc),
     casualty: (sc && sc.casualty) || 0,
@@ -2748,8 +2714,9 @@ function finishSim(){
     renderOCC();
     logEvent(SIM.t, 'จบช่วงจำลองภาคสนาม — เฟสถัดไปตามแผน: หน่วยดับเพลิงภายนอกถึงพื้นที่ (นาที 13-27) → EMT/Safety/ตำรวจ ตรวจพื้นที่ คืนไฟ Reset FCP (นาที 27-33) → ประกาศกลับสู่สภาวะปกติ (นาที 33-40) → รายงานอุบัติการณ์ (นาที 41)', 'gray');
   }
+  const targetTxt = fmtTime(activeBuilding().passThresholdSec);
   $('#sim-done-text').textContent =
-    `เวลาอพยพ ${fmtTime(evacSec)} นาที (${pass?'ผ่านเกณฑ์ 5:00 นาที':'ไม่ผ่านเกณฑ์ 5:00 นาที'})`
+    `เวลาอพยพ ${fmtTime(evacSec)} นาที (${pass?`ผ่านเกณฑ์ ${targetTxt} นาที`:`ไม่ผ่านเกณฑ์ ${targetTxt} นาที`})`
     + (missionSec>evacSec+5 ? ` · ภารกิจทั้งหมด (รวมค้นหา/ช่วยเหลือ) จบที่ ${fmtTime(missionSec)}` : '')
     + ` · คิวสะสมสูงสุด ${SIM.maxQueue} คน`;
   const banner = $('#sim-done');
@@ -2767,94 +2734,8 @@ function simStats(){
   $('#sim-prog').style.width = (SIM.agents.length? SIM.evacuated/SIM.agents.length*100 : 0)+'%';
 }
 
-function simDraw(){
-  const sc = getActiveScenario();
-  const floorId = scenarioFloorId(sc);
-  const realBg = drawFloorPlanBackground(ctx, floorId, 900, 520);
-  if(!realBg){
-    ctx.clearRect(0,0,900,520);
-    ctx.fillStyle = '#0a101a'; ctx.fillRect(0,0,900,520);
-    const c = GEO.corridor;
-    ctx.fillStyle = '#131c2c'; ctx.fillRect(c.x,c.y,c.w,c.h);
-    GEO.rooms.forEach(r=>{
-      ctx.fillStyle = '#1a2438'; ctx.strokeStyle = '#33405e'; ctx.lineWidth = 2;
-      ctx.fillRect(r.x,r.y,r.w,r.h); ctx.strokeRect(r.x,r.y,r.w,r.h);
-      ctx.fillStyle = '#65738f'; ctx.font = '12px sans-serif'; ctx.textAlign='center';
-      const label = (sc && sc.originLabel && r.id===sc.origin) ? sc.originLabel : r.name;
-      ctx.fillText(label, r.x+r.w/2, r.y+20);
-    });
-  } else {
-    const plan = scenarioFloorPlan(sc);
-    ctx.save();
-    ctx.lineWidth = 1.8;
-    plan.rooms.forEach(r=>{
-      if(!(String(r.risk).includes('High') || String(r.risk).includes('Critical') || r.node)) return;
-      const col = riskColor(r.risk);
-      ctx.strokeStyle = col;
-      ctx.fillStyle = col + '26';
-      ctx.strokeRect(r.x, r.y, r.w, r.h);
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.fillStyle = col;
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(r.no, r.x+r.w/2, r.y+14);
-    });
-    ctx.restore();
-  }
-
-  if(sc && (sc.type==='เพลิงไหม้' || sc.type==='สารเคมีรั่วไหล')){
-    const r = scenarioOriginRoom(sc) || GEO.rooms.find(x=>x.id===sc.origin) || GEO.rooms[0];
-    const fx = r.x+r.w/2, fy = r.y+r.h/2+10;
-    const g = ctx.createRadialGradient(fx,fy,5,fx,fy,70);
-    g.addColorStop(0,'rgba(255,122,26,.68)'); g.addColorStop(1,'rgba(255,77,77,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx,fy,70,0,7); ctx.fill();
-    ctx.font = '26px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(sc.type==='เพลิงไหม้'?'🔥':'☣️', fx, fy+9);
-    ctx.fillStyle = '#ffb04d'; ctx.font = 'bold 12px sans-serif';
-    ctx.fillText((sc.originLabel || r.name).slice(0,36), fx, Math.max(18, fy-46));
-  }
-
-  SIM.exits.forEach(e=>{
-    ctx.fillStyle = e.blocked ? 'rgba(255,77,77,.22)' : 'rgba(46,204,113,.22)';
-    ctx.strokeStyle = e.blocked ? '#ff4d4d' : '#2ecc71';
-    ctx.lineWidth = 2;
-    ctx.fillRect(e.x-24,e.y-38,48,76); ctx.strokeRect(e.x-24,e.y-38,48,76);
-    ctx.fillStyle = e.blocked ? '#ff4d4d' : '#2ecc71';
-    ctx.font = 'bold 11px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(e.blocked?'ปิด':(e.code || 'EXIT'), e.x, e.y);
-    ctx.font = '10px sans-serif';
-    ctx.fillText(`${e.count} คน`, e.x, e.y+16);
-    ctx.fillText(e.id==='W'?'Main Stair':'Fire Escape', e.x, e.y+30);
-  });
-
-  SIM.agents.forEach(a=>{
-    if(a.state==='out') return;
-    ctx.fillStyle = a.state==='missing' ? '#ffc93c' : a.state==='wait' ? '#8b98b0' : '#4da3ff';
-    ctx.beginPath(); ctx.arc(a.x,a.y,4,0,7); ctx.fill();
-  });
-  ctx.fillStyle = realBg ? 'rgba(10,16,26,.72)' : '#0a101a';
-  ctx.fillRect(28,490,844,24);
-  ctx.fillStyle = '#c9d3e6'; ctx.font = '11px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('พื้นหลัง = cropped real OCC YL floor plan · จุดคน/EXIT/ต้นเหตุ = simulation overlay · สีเหลือง = ผู้สูญหาย (รอ Rescue)', 450, 506);
-
-  if(SIM.trapped>0){
-    let label, col;
-    if(SIM.trappedRescued){ label='RESCUED · ช่วยลงสำเร็จ'; col='#2ecc71'; }
-    else if(SIM.trappedScheduled){ label='TRAPPED · รอ External Fire Service'; col='#ff7a1a'; }
-    else { label='เฝ้าระวัง (รอการอพยพหลักเสร็จก่อน)'; col='#8b98b0'; }
-    const bx=548, by=8, bw=344, bh=46;
-    ctx.fillStyle='rgba(255,122,26,.12)'; ctx.strokeStyle=col; ctx.lineWidth=1.5;
-    ctx.fillRect(bx,by,bw,bh); ctx.strokeRect(bx,by,bw,bh);
-    ctx.textAlign='left';
-    ctx.fillStyle=col; ctx.font='bold 12px sans-serif';
-    ctx.fillText(`⚠ ผู้ติดค้างที่ ${SIM.trappedFloor} · ${SIM.trapped} คน`, bx+12, by+20);
-    ctx.fillStyle='#c9d3e6'; ctx.font='11px sans-serif';
-    ctx.fillText(`สถานะ: ${label}`, bx+12, by+37);
-  }
-}
-
 /* ============================================================
-   [v1.4] simDraw — Agent Simulation บนผังเวกเตอร์ (override เวอร์ชัน PNG ด้านบน)
+   [v1.4] simDraw — Agent Simulation บนผังเวกเตอร์
    ============================================================ */
 function simDraw(){
   const sc = getActiveScenario();
@@ -2916,11 +2797,12 @@ function simDraw(){
     ctx.fillText(e.blocked ? 'ปิด' : e.code, e.x, e.y-4);
     ctx.font = '9.5px sans-serif';
     ctx.fillText(`${e.count} คน`, e.x, e.y+9);
-    ctx.fillText(e.id==='W' ? 'Main Stair' : e.id==='L' ? 'Main Entrance' : (e.code==='RESCUE'?'Rescue Edge':'Fire Escape'), e.x, e.y+21);
+    const exitSubLabel = e.id==='W' ? 'Main Stair' : e.id==='L' ? 'Main Entrance' : e.code==='RESCUE' ? 'Rescue Edge' : e.id==='E' ? 'Fire Escape' : 'Exit';
+    ctx.fillText(exitSubLabel, e.x, e.y+21);
   });
 
   // อุปกรณ์ป้องกันและระงับอัคคีภัย (วาดก่อน agents เพื่อไม่บังจุดคน)
-  (FLOOR_EQUIP[scenarioFloorId(sc)]||[]).forEach(eq=>{
+  (activeBuilding().floorEquip[scenarioFloorId(sc)]||[]).forEach(eq=>{
     ctx.lineWidth = 1.2; ctx.strokeStyle = '#fff';
     if(eq.t==='hose'){
       ctx.fillStyle = '#dc2626';
@@ -2945,7 +2827,7 @@ function simDraw(){
   ctx.fillStyle = 'rgba(30,58,95,.88)';
   ctx.fillRect(0,440,1000,30);
   ctx.fillStyle = '#dbe5f0'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(`${plan.label} OCC YL · vector schematic + agent simulation · น้ำเงิน = กำลังอพยพ · เทา = ยังไม่เริ่ม · F/H/A = อุปกรณ์ดับเพลิงอ้างอิง EVACUATION PLAN OCC YL · ${VECTOR_CAVEAT}`, 500, 459);
+  ctx.fillText(`${plan.label} ${activeBuilding().shortName} · vector schematic + agent simulation · น้ำเงิน = กำลังอพยพ · เทา = ยังไม่เริ่ม · F/H/A = อุปกรณ์ดับเพลิงอ้างอิงแผนผังอพยพ · ${VECTOR_CAVEAT}`, 500, 459);
 
   // callout ผู้ติดค้างที่สูง (อยู่คนละชั้นกับที่จำลอง)
   if(SIM.trapped>0){
@@ -3060,29 +2942,37 @@ if(state.liveDrill){
 
 function renderOCC(){
   const r = state.occRun || null;
+  const timeline = activeBuilding().drillTimeline;
   // Drill Plan Timeline
-  $('#occ-timeline').innerHTML = OCC_TIMELINE.map(row=>{
-    let res = '<span class="chip gray">Pending</span>';
-    if(r){
-      if(row.st==='Power Isolation Required')
-        res = r.spread ? '<span class="chip red">Critical</span> <span class="chip green">Completed</span> ตัดไฟก่อนใช้น้ำสำเร็จ'
-                       : '<span class="chip gray">ไม่เข้าเงื่อนไขรอบนี้</span>';
-      else if(row.st==='Muster & Headcount')
-        res = r.missing ? `<span class="chip yellow">Delayed</span> ขาด ${r.missing} คน → Rescue พบตัวครบ`
-                        : '<span class="chip green">Completed</span> ตรวจนับครบถ้วน';
-      else if(row.st==='Escalation / Evacuation Started')
-        res = `<span class="chip green">Completed</span> อพยพครบใน ${fmtTime(r.evacSec)}`;
-      else if(row.st==='Command Post Active')
-        res = '<span class="chip green">Completed</span>' + (r.casualty ? ` · First Aid รับผู้บาดเจ็บ ${r.casualty} คน` : '');
-      else if(['External Agency Arrived','Recovery Inspection','Return to Normal','Incident Report Created'].includes(row.st))
-        res = '<span class="chip blue">ตามแผน (เฟสหลังจำลอง)</span>';
-      else res = '<span class="chip green">Completed</span>';
-    }
-    return `<tr><td>${row.m}</td><td>${row.ev}</td><td>${row.st}</td><td>${res}</td></tr>`;
-  }).join('');
-  const st = $('#occ-tl-state');
-  st.textContent = r ? 'รอบล่าสุด: '+r.scenario.name : 'ยังไม่ได้รัน';
-  st.className = 'chip ' + (r ? 'orange' : 'gray');
+  if(!timeline){
+    $('#occ-timeline').innerHTML = `<tr><td colspan="4">ยังไม่มีแผนซ้อมสำหรับอาคารนี้ในระบบ</td></tr>`;
+    const stEmpty = $('#occ-tl-state');
+    stEmpty.textContent = 'ไม่มีข้อมูลสำหรับอาคารนี้';
+    stEmpty.className = 'chip gray';
+  } else {
+    $('#occ-timeline').innerHTML = timeline.map(row=>{
+      let res = '<span class="chip gray">Pending</span>';
+      if(r){
+        if(row.st==='Power Isolation Required')
+          res = r.spread ? '<span class="chip red">Critical</span> <span class="chip green">Completed</span> ตัดไฟก่อนใช้น้ำสำเร็จ'
+                         : '<span class="chip gray">ไม่เข้าเงื่อนไขรอบนี้</span>';
+        else if(row.st==='Muster & Headcount')
+          res = r.missing ? `<span class="chip yellow">Delayed</span> ขาด ${r.missing} คน → Rescue พบตัวครบ`
+                          : '<span class="chip green">Completed</span> ตรวจนับครบถ้วน';
+        else if(row.st==='Escalation / Evacuation Started')
+          res = `<span class="chip green">Completed</span> อพยพครบใน ${fmtTime(r.evacSec)}`;
+        else if(row.st==='Command Post Active')
+          res = '<span class="chip green">Completed</span>' + (r.casualty ? ` · First Aid รับผู้บาดเจ็บ ${r.casualty} คน` : '');
+        else if(['External Agency Arrived','Recovery Inspection','Return to Normal','Incident Report Created'].includes(row.st))
+          res = '<span class="chip blue">ตามแผน (เฟสหลังจำลอง)</span>';
+        else res = '<span class="chip green">Completed</span>';
+      }
+      return `<tr><td>${row.m}</td><td>${row.ev}</td><td>${row.st}</td><td>${res}</td></tr>`;
+    }).join('');
+    const st = $('#occ-tl-state');
+    st.textContent = r ? 'รอบล่าสุด: '+r.scenario.name : 'ยังไม่ได้รัน';
+    st.className = 'chip ' + (r ? 'orange' : 'gray');
+  }
 
   // Command Post Status
   checkList('#occ-cp', [
@@ -3142,7 +3032,13 @@ function renderOCC(){
   ks.textContent = r ? 'รอบล่าสุด: '+r.scenario.name : 'ยังไม่ได้รัน';
   ks.className = 'chip ' + (r ? 'orange' : 'gray');
 }
-$('#occ-roles').innerHTML = OCC_ROLES.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td></tr>`).join('');
+function renderOCCRoles(){
+  const roles = activeBuilding().drillRoles;
+  $('#occ-roles').innerHTML = roles
+    ? roles.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td></tr>`).join('')
+    : `<tr><td colspan="3">ยังไม่มีข้อมูลบทบาทสำหรับอาคารนี้</td></tr>`;
+}
+renderOCCRoles();
 renderOCC();
 
 /* ========================================================= */
@@ -3191,8 +3087,14 @@ renderCAR();
 /* ========================================================= */
 /* Drill Dashboard                                            */
 /* ========================================================= */
-(function renderDrills(){
-  $('#drill-table').innerHTML = DRILLS.slice().reverse().map(d=>`
+function renderDrills(){
+  const hist = activeBuilding().drillHistory || [];
+  if(!hist.length){
+    $('#drill-table').innerHTML = '<tr><td colspan="6">ยังไม่มีประวัติการฝึกซ้อมสำหรับอาคารนี้ในระบบ</td></tr>';
+    $('#drill-chart').innerHTML = '';
+    return;
+  }
+  $('#drill-table').innerHTML = hist.slice().reverse().map(d=>`
     <tr>
       <td>${d.date}</td><td>${d.type}</td><td>${d.sc}</td>
       <td style="font-variant-numeric:tabular-nums">${fmtTime(d.sec)} นาที</td><td>${d.part}</td>
@@ -3202,7 +3104,7 @@ renderCAR();
   // line chart
   const W=620, H=200, padL=44, padB=30, padT=16, padR=16;
   const minV=4, maxV=6;
-  const xs = i => padL + i*( (W-padL-padR)/(DRILLS.length-1) );
+  const xs = i => padL + i*( (W-padL-padR)/Math.max(1,hist.length-1) );
   const ys = v => padT + (maxV - v)/(maxV-minV)*(H-padT-padB);
   let s = '';
   // grid + y labels
@@ -3210,19 +3112,20 @@ renderCAR();
     s += `<line x1="${padL}" y1="${ys(v)}" x2="${W-padR}" y2="${ys(v)}" stroke="#243049" stroke-width="1"/>
           <text x="${padL-8}" y="${ys(v)+4}" fill="#65738f" font-size="10" text-anchor="end">${v.toFixed(1)}</text>`;
   }
-  // target line 5:00
+  // target line
   s += `<line x1="${padL}" y1="${ys(5)}" x2="${W-padR}" y2="${ys(5)}" stroke="#ff7a1a" stroke-width="2" stroke-dasharray="8 6"/>
         <text x="${W-padR}" y="${ys(5)-6}" fill="#ff7a1a" font-size="10.5" text-anchor="end">เกณฑ์ 5:00 นาที</text>`;
   // polyline
-  const pts = DRILLS.map((d,i)=>`${xs(i)},${ys(d.sec/60)}`).join(' ');
+  const pts = hist.map((d,i)=>`${xs(i)},${ys(d.sec/60)}`).join(' ');
   s += `<polyline points="${pts}" fill="none" stroke="#4da3ff" stroke-width="2.5"/>`;
-  DRILLS.forEach((d,i)=>{
+  hist.forEach((d,i)=>{
     s += `<circle cx="${xs(i)}" cy="${ys(d.sec/60)}" r="5" fill="${d.pass?'#2ecc71':'#ff4d4d'}"/>
           <text x="${xs(i)}" y="${ys(d.sec/60)-12}" fill="#e8edf6" font-size="10.5" text-anchor="middle">${fmtTime(d.sec)}</text>
           <text x="${xs(i)}" y="${H-8}" fill="#65738f" font-size="10" text-anchor="middle">${d.date}</text>`;
   });
   $('#drill-chart').innerHTML = s;
-})();
+}
+renderDrills();
 
 /* ========================================================= */
 /* AI (Claude API) — เรียกผ่าน backend proxy /api/claude-proxy เท่านั้น */
@@ -3310,6 +3213,7 @@ function renderAIChat(){
 function aiChatContext(){
   const sc = getActiveScenario();
   return {
+    building: activeBuilding().name,
     activeScenario: sc ? {name:sc.name, floor:sc.floorLabel||sc.floor, people:sc.people, note:sc.note} : null,
     lastSim: state.lastSim ? {scenario: state.lastSim.scenario && state.lastSim.scenario.name, evacSec: state.lastSim.evacSec, pass: state.lastSim.pass, kpi: state.lastSim.kpi, casualty: state.lastSim.casualty, missing: state.lastSim.missing, trapped: state.lastSim.trapped} : null,
     occRun: state.occRun ? {scenario: state.occRun.scenario && state.occRun.scenario.name, kpi: state.occRun.kpi} : null,
@@ -3326,7 +3230,7 @@ async function sendAIChat(){
   AI_CHAT_HISTORY.push({role:'user', text:q});
   renderAIChat();
   $('#ai-chat-status').textContent = 'กำลังคิด...'; $('#ai-chat-status').className = 'chip orange';
-  const systemPrompt = 'คุณคือผู้ช่วย AI ด้านความปลอดภัยอัคคีภัย/อพยพหนีไฟของระบบ AI Emergency Digital Twin สำหรับอาคาร OCC YL (BTS) ตอบเป็นภาษาไทย กระชับ ตรงประเด็น อิงเฉพาะข้อมูลบริบทที่ให้มาเท่านั้น ห้ามอ้างเลขมาตรากฎหมายเอง ห้ามแนะนำให้พนักงานทั่วไปกลับเข้าพื้นที่อันตราย ระบุชัดเจนว่าคำตอบเป็น Decision Support เท่านั้น หากข้อมูลที่ให้มาไม่พอตอบ ให้บอกตรงๆ ว่าไม่มีข้อมูลเพียงพอ ส่งกลับเป็น JSON เท่านั้นในรูป {"answer":"คำตอบ"} โดย answer ต้องเป็น string และห้ามมีฟิลด์อื่น';
+  const systemPrompt = `คุณคือผู้ช่วย AI ด้านความปลอดภัยอัคคีภัย/อพยพหนีไฟของระบบ AI Emergency Digital Twin สำหรับ${activeBuilding().name} (BTS) ตอบเป็นภาษาไทย กระชับ ตรงประเด็น อิงเฉพาะข้อมูลบริบทที่ให้มาเท่านั้น ห้ามอ้างเลขมาตรากฎหมายเอง ห้ามแนะนำให้พนักงานทั่วไปกลับเข้าพื้นที่อันตราย ระบุชัดเจนว่าคำตอบเป็น Decision Support เท่านั้น หากข้อมูลที่ให้มาไม่พอตอบ ให้บอกตรงๆ ว่าไม่มีข้อมูลเพียงพอ ส่งกลับเป็น JSON เท่านั้นในรูป {"answer":"คำตอบ"} โดย answer ต้องเป็น string และห้ามมีฟิลด์อื่น`;
   const userPrompt = `บริบทข้อมูลปัจจุบันในระบบ (JSON):\n${JSON.stringify(aiChatContext())}\n\nคำถาม: ${q}\n\nตอบเป็น JSON ตามรูปแบบที่กำหนดเท่านั้น`;
   try{
     const answer = parseAIChatResponse(await callClaudeAPI(userPrompt, systemPrompt, 600));
@@ -3450,7 +3354,9 @@ function buildAARFromSim(){
   }
   const sc = r.scenario;
   const scName = esc(sc ? sc.name : 'สถานการณ์ค่าเริ่มต้น');
-  const over = r.evacSec - 300;
+  const targetSec = r.passThresholdSec || 300;
+  const targetTxt = fmtTime(targetSec);
+  const over = r.evacSec - targetSec;
   const busiest = r.exits.slice().sort((a,b)=>b.count-a.count)[0];
   const blockedTxt = r.exits.filter(e=>e.blocked).map(e=>e.name).join(', ');
   return `
@@ -3470,8 +3376,8 @@ function buildAARFromSim(){
   <h2>2. ผลการอพยพเทียบเกณฑ์</h2>
   <ul>
     <li><b>เวลาอพยพครบทุกคน: ${fmtTime(r.evacSec)} นาที</b> — ${r.pass
-      ? `<span style="color:var(--green)">ผ่านเกณฑ์ 5:00 นาที (เหลือส่วนต่าง ${fmtTime(-over)} นาที)</span>`
-      : `<span style="color:var(--red)">ไม่ผ่านเกณฑ์ 5:00 นาที (เกิน ${fmtTime(over)} นาที)</span>`}</li>
+      ? `<span style="color:var(--green)">ผ่านเกณฑ์ ${targetTxt} นาที (เหลือส่วนต่าง ${fmtTime(-over)} นาที)</span>`
+      : `<span style="color:var(--red)">ไม่ผ่านเกณฑ์ ${targetTxt} นาที (เกิน ${fmtTime(over)} นาที)</span>`}</li>
     ${r.missionSec && r.missionSec > r.evacSec + 5 ? `<li>เวลาภารกิจทั้งหมดรวมค้นหา/ช่วยเหลือ/ส่งต่อ EMS: ${fmtTime(r.missionSec)} นาที</li>` : ''}
     <li>การกระจายผู้อพยพ: ${r.exits.map(e=>`${e.name} ${e.count} คน${e.blocked?' (ปิด)':''}`).join(' · ')}</li>
     <li>คิวสะสมสูงสุดหน้าทางออก: ${r.maxQueue} คน (จุดคับคั่ง: ${busiest.name})</li>
@@ -3602,7 +3508,12 @@ function buildAARFromLiveDrill(){
 }
 
 function buildAARFromDrill(){
-  const d = DRILLS[DRILLS.length-1];
+  const hist = activeBuilding().drillHistory || [];
+  const d = hist[hist.length-1];
+  if(!d){
+    return `<h2>ยังไม่มีประวัติการฝึกซ้อมจริงสำหรับอาคารนี้</h2>
+      <p>อาคารนี้ยังไม่มีข้อมูลการฝึกซ้อมจริงในระบบ — ลองสร้างรายงานจากผลการจำลอง (Evacuation Simulation) แทน</p>`;
+  }
   return `
   <h2>รายงานทบทวนหลังปฏิบัติ (After Action Review)</h2>
   <div class="aar-meta">
@@ -3652,6 +3563,8 @@ function buildAARFromDrill(){
   ${lawBlock()}
   ${aarFoot('บันทึกการซ้อมจริง (ข้อมูลจำลองเพื่อสาธิต)')}`;
 }
+
+restoreActiveBuildingFromStorage();
 </script>
 </body>
 </html>
